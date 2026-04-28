@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /avaliacoes/{avaliacao} {
+      // Admin pode ler tudo
+      allow read: if request.auth != null;
+      // Totem (público) pode apenas criar avaliações
+      allow create: if true; 
+      // Apenas admin altera
+      allow update, delete: if request.auth != null;
+    }
+    
+    match /colaboradores/{colaborador} {
+      // Totem pode ler colaboradores
+      allow read: if true; 
+      // Apenas admin pode gerenciar a equipe
+      allow create, update, delete: if request.auth != null;
+    }
+  }
+}

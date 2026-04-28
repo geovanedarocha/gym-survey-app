@@ -1,8 +1,15 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    match /equipe/{imageId} {
+      // Público pode ver a foto dos colaboradores no totem
+      allow read: if true;
+      // Apenas Admin autenticado pode fazer upload de imagens de até 5MB
+      allow write: if request.auth != null && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+    }
     match /{allPaths=**} {
-      allow read, write: if true;
+      // Negar qualquer outro acesso por segurança
+      allow read, write: if false;
     }
   }
 }

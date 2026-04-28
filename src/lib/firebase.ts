@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { getFirestore, Firestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
+import { getAuth, Auth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,7 +16,17 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 // Tipagem explícita para o TypeScript não reclamar no Build
-const db: Firestore = getFirestore(app);
-const storage: FirebaseStorage = getStorage(app);
+let db: Firestore;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+  });
+} catch (e) {
+  // Fallback seguro caso o Firestore já tenha sido inicializado no Hot Reload
+  db = getFirestore(app);
+}
 
-export { db, storage };
+const storage: FirebaseStorage = getStorage(app);
+const auth: Auth = getAuth(app);
+
+export { db, storage, auth };

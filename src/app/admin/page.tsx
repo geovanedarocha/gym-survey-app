@@ -1,51 +1,57 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+import { db, auth } from "@/lib/firebase";
 import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
-import { Activity, MessageCircle, BarChart3, Users, Star } from "lucide-react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { Activity, MessageCircle, BarChart3, Users, Star, LogOut } from "lucide-react";
 
 function AdminDashboardInner() {
-  const searchParams = useSearchParams();
-  const secret = searchParams.get("secret");
   const router = useRouter();
   
   const [data, setData] = useState<any[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (secret !== "123") return;
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        // Set up realtime listener if authenticated
+        const q = query(collection(db, "avaliacoes"), orderBy("timestamp", "desc"), limit(100));
+        
+        const unsubscribeData = onSnapshot(q, (snapshot) => {
+          const docs = snapshot.docs.map(doc => {
+            const rawData = doc.data();
+            const date = rawData.timestamp?.toDate() || new Date();
+            return {
+              id: doc.id,
+              ...rawData,
+              timeLabel: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              dateLabel: date.toLocaleDateString()
+            };
+          });
+          setData(docs);
+        }, (err) => {
+          console.error("Erro ao escutar dados admin", err);
+        });
 
-    // A fetching total amount for KPIs is complex if relying only on limit(100), 
-    // but since it's an MVP, I'll fetch the last 100 to show some realistic KPI representation.
-    const q = query(collection(db, "avaliacoes"), orderBy("timestamp", "desc"), limit(100));
-    
-    // Set up realtime listener
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => {
-        const rawData = doc.data();
-        const date = rawData.timestamp?.toDate() || new Date();
-        return {
-          id: doc.id,
-          ...rawData,
-          timeLabel: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          dateLabel: date.toLocaleDateString()
-        };
-      });
-      setData(docs);
-    }, (err) => {
-      console.error("Erro ao escutar dados admin", err);
+        return () => unsubscribeData();
+      } else {
+        setIsAuthenticated(false);
+        router.push("/admin/login");
+      }
     });
 
-    return () => unsubscribe();
-  }, [secret]);
+    return () => unsubscribeAuth();
+  }, [router]);
 
-  if (secret !== "123") {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-zinc-950 text-white font-sans">
-        <h1 className="text-3xl text-red-500 font-bold">401 - Não Autorizado</h1>
-      </div>
-    );
+  if (isAuthenticated === null) {
+    return <div className="h-screen bg-zinc-950 flex justify-center items-center text-white">Verificando acesso...</div>;
+  }
+
+  if (isAuthenticated === false) {
+    return null; // Will redirect
   }
 
   // --- KPI Calculus over the loaded snapshot ---
@@ -74,17 +80,25 @@ function AdminDashboardInner() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8 font-sans overflow-auto">
       <header className="mb-10 flex flex-col items-start gap-4 border-b border-zinc-800 pb-6">
-        <div className="flex w-full justify-between items-center">
+        <div className="flex w-full justify-between items-center flex-wrap gap-4">
           <h1 className="text-4xl font-bold flex items-center gap-4">
             <Activity className="text-[#10B981] w-10 h-10 animate-pulse" />
             Dashboard Executivo
           </h1>
-          <button 
-            onClick={() => router.push(`/admin/equipe?secret=${secret}`)}
-            className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white py-2 px-4 rounded-xl transition-colors border border-zinc-700"
-          >
-            <Users size={18} /> Gerir Equipe
-          </button>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => router.push(`/admin/equipe`)}
+              className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white py-2 px-4 rounded-xl transition-colors border border-zinc-700"
+            >
+              <Users size={18} /> Gerir Equipe
+            </button>
+            <button 
+              onClick={() => signOut(auth)}
+              className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 py-2 px-4 rounded-xl transition-colors"
+            >
+              <LogOut size={18} /> Sair
+            </button>
+          </div>
         </div>
       </header>
 

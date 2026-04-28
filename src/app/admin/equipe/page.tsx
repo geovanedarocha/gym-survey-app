@@ -1,38 +1,46 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { db, storage } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+import { db, storage, auth } from "@/lib/firebase";
 import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Users, Upload, Trash2, ArrowLeft, User } from "lucide-react";
 
 function EquipeDashboardInner() {
-  const searchParams = useSearchParams();
-  const secret = searchParams.get("secret");
   const router = useRouter();
 
   const [staff, setStaff] = useState<any[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [nome, setNome] = useState("");
   const [cargo, setCargo] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    if (secret !== "123") return;
-    const q = query(collection(db, "colaboradores"), orderBy("nome", "asc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        const q = query(collection(db, "colaboradores"), orderBy("nome", "asc"));
+        const unsubscribeData = onSnapshot(q, (snapshot) => {
+          setStaff(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+        return () => unsubscribeData();
+      } else {
+        setIsAuthenticated(false);
+        router.push("/admin/login");
+      }
     });
-    return () => unsubscribe();
-  }, [secret]);
+    return () => unsubscribeAuth();
+  }, [router]);
 
-  if (secret !== "123") {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-zinc-950 text-white font-sans">
-        <h1 className="text-3xl text-red-500 font-bold">401 - Não Autorizado</h1>
-      </div>
-    );
+  if (isAuthenticated === null) {
+    return <div className="h-screen bg-zinc-950 flex justify-center items-center text-white">Verificando acesso...</div>;
+  }
+
+  if (isAuthenticated === false) {
+    return null; // Will redirect
   }
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -79,7 +87,7 @@ function EquipeDashboardInner() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8 font-sans">
       <header className="mb-10 flex flex-col gap-4 border-b border-zinc-800 pb-6">
-        <button onClick={() => router.push(`/admin?secret=${secret}`)} className="text-emerald-500 hover:text-emerald-400 flex items-center gap-2 self-start transition-colors">
+        <button onClick={() => router.push(`/admin`)} className="text-emerald-500 hover:text-emerald-400 flex items-center gap-2 self-start transition-colors">
           <ArrowLeft size={20} /> Voltar ao Painel
         </button>
         <h1 className="text-4xl font-bold flex items-center gap-4">
