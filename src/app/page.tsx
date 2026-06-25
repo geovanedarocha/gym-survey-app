@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { sendCriticalAlertEmail } from "@/lib/emailAlert";
 import { User, Star, Dumbbell, Sparkles, CheckCircle } from "lucide-react";
 
 const negativeTags = ["Equipamentos", "Limpeza", "Atendimento", "Lotação"];
@@ -114,16 +115,28 @@ export default function Home() {
 
   const checkAlert = async () => {
     if (feedback.nota_geral !== "Péssimo") return;
-    
-    // Check last 2 to see if they were also "Péssimo"
+
     try {
-      const q = query(collection(db, "avaliacoes"), orderBy("timestamp", "desc"), limit(2));
-      const querySnapshot = await getDocs(q);
-      const docs = querySnapshot.docs.map(doc => doc.data());
-      
-      const allPessimo = docs.length === 2 && docs.every(d => d.nota_geral === "Péssimo");
-      if (allPessimo) {
-        console.warn("⚠️ ALERTA CRÍTICO: Múltiplas avaliações 'Péssimo' consecutivas detectadas! Verifique o atendimento.");
+      const [avaliacoesSnap, configSnap] = await Promise.all([
+        getDocs(query(collection(db, "avaliacoes"), orderBy("timestamp", "desc"), limit(2))),
+        getDoc(doc(db, "config", "alertas")),
+      ]);
+
+      const previous = avaliacoesSnap.docs.map(d => d.data());
+      const allPessimo = previous.length === 2 && previous.every(d => d.nota_geral === "Péssimo");
+
+      if (!allPessimo) return;
+
+      console.warn("⚠️ ALERTA CRÍTICO: Múltiplas avaliações 'Péssimo' consecutivas detectadas!");
+
+      if (configSnap.exists()) {
+        const config = configSnap.data() as { emailGestor?: string; ativo?: boolean };
+        if (config.ativo && config.emailGestor) {
+          await sendCriticalAlertEmail(config.emailGestor, {
+            tags: feedback.tags,
+            timestamp: new Date().toLocaleString("pt-BR"),
+          });
+        }
       }
     } catch (e) {
       console.error("Erro ao checar alertas", e);
