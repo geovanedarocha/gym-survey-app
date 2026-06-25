@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>C1 — Diagrama de Contexto</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #070d1a; font-family: 'Inter', sans-serif; color: white; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 24px; }
+    .breadcrumb { display: flex; gap: 8px; align-items: center; font-size: 11px; color: #475569; margin-bottom: 24px; letter-spacing: 0.5px; }
+    .breadcrumb span { color: #334155; }
+    .breadcrumb strong { color: #7dd3fc; }
+    h1 { font-size: 22px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #64748b; margin-bottom: 32px; }
+    .diagram-wrap { background: #0d1526; border: 1px solid #1e293b; border-radius: 16px; padding: 8px; width: 100%; max-width: 960px; }
+    svg { display: block; width: 100%; height: auto; }
+    .legend { display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+    .note { margin-top: 28px; font-size: 11px; color: #334155; font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body>
+  <div class="breadcrumb">
+    <span>gym-survey-app</span> / <span>C4 Model</span> / <strong>C1 — System Context</strong>
+  </div>
+  <h1>C1 — Diagrama de Contexto do Sistema</h1>
+  <p class="subtitle">Como o sistema se encaixa no mundo ao seu redor — atores e sistemas externos</p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 940 560" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#475569"/>
+        </marker>
+        <filter id="glow-blue">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+
+      <!-- ── BACKGROUND ── -->
+      <rect width="940" height="560" fill="#0d1526" rx="12"/>
+
+      <!-- ── TITLE ── -->
+      <text x="470" y="38" text-anchor="middle" fill="#f1f5f9" font-size="16" font-weight="700" font-family="Inter,sans-serif">Sistema de Avaliação de Academia</text>
+      <text x="470" y="58" text-anchor="middle" fill="#475569" font-size="11" font-family="Inter,sans-serif">Nível 1 — Contexto do Sistema</text>
+
+      <!-- ────────────────────────────────────────────────
+           PESSOAS
+      ──────────────────────────────────────────────── -->
+
+      <!-- Aluno -->
+      <circle cx="165" cy="110" r="24" fill="#1d4ed8" stroke="#3b82f6" stroke-width="1.5"/>
+      <!-- stick figure lines inside circle suggest a person - simplified -->
+      <circle cx="165" cy="104" r="8" fill="white" opacity="0.9"/>
+      <rect x="155" y="113" width="20" height="12" rx="3" fill="white" opacity="0.9"/>
+      <rect x="120" y="138" width="90" height="72" rx="10" fill="#1d4ed8" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="165" y="162" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">Aluno</text>
+      <text x="165" y="178" text-anchor="middle" fill="#bfdbfe" font-size="10" font-family="Inter,sans-serif">Frequentador</text>
+      <line x1="120" y1="192" x2="210" y2="192" stroke="#3b82f6" stroke-width="0.5" opacity="0.4"/>
+      <text x="165" y="203" text-anchor="middle" fill="#93c5fd" font-size="9" font-family="Inter,sans-serif">[Person]</text>
+
+      <!-- Admin -->
+      <circle cx="775" cy="110" r="24" fill="#1d4ed8" stroke="#3b82f6" stroke-width="1.5"/>
+      <circle cx="775" cy="104" r="8" fill="white" opacity="0.9"/>
+      <rect x="765" y="113" width="20" height="12" rx="3" fill="white" opacity="0.9"/>
+      <rect x="715" y="138" width="120" height="72" rx="10" fill="#1d4ed8" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="775" y="162" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">Administrador</text>
+      <text x="775" y="178" text-anchor="middle" fill="#bfdbfe" font-size="10" font-family="Inter,sans-serif">Gestor da Academia</text>
+      <line x1="715" y1="192" x2="835" y2="192" stroke="#3b82f6" stroke-width="0.5" opacity="0.4"/>
+      <text x="775" y="203" text-anchor="middle" fill="#93c5fd" font-size="9" font-family="Inter,sans-serif">[Person]</text>
+
+      <!-- ────────────────────────────────────────────────
+           SISTEMA EM FOCO
+      ──────────────────────────────────────────────── -->
+      <rect x="305" y="248" width="330" height="148" rx="12" fill="#1e3a6e" stroke="#3b82f6" stroke-width="2"/>
+      <rect x="305" y="248" width="330" height="148" rx="12" fill="url(#grad-blue)" opacity="0.08"/>
+      <text x="470" y="278" text-anchor="middle" fill="white" font-size="15" font-weight="700" font-family="Inter,sans-serif">Sistema de Avaliação</text>
+      <text x="470" y="296" text-anchor="middle" fill="white" font-size="15" font-weight="700" font-family="Inter,sans-serif">de Academia</text>
+      <line x1="305" y1="310" x2="635" y2="310" stroke="#3b82f6" stroke-width="0.5" opacity="0.4"/>
+      <text x="470" y="327" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="600" font-family="Inter,sans-serif">[Software System — Foco]</text>
+      <text x="470" y="346" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Totem de pesquisa de satisfação</text>
+      <text x="470" y="362" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">+ Painel administrativo em tempo real</text>
+      <text x="470" y="378" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Next.js 16 · Firebase Hosting</text>
+
+      <!-- ────────────────────────────────────────────────
+           SISTEMAS EXTERNOS
+      ──────────────────────────────────────────────── -->
+
+      <!-- EmailJS -->
+      <rect x="50" y="460" width="175" height="80" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+      <text x="137" y="487" text-anchor="middle" fill="white" font-size="13" font-weight="600" font-family="Inter,sans-serif">EmailJS</text>
+      <line x1="50" y1="498" x2="225" y2="498" stroke="#334155" stroke-width="0.5"/>
+      <text x="137" y="512" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">[External System]</text>
+      <text x="137" y="530" text-anchor="middle" fill="#475569" font-size="9" font-family="Inter,sans-serif">Serviço de e-mail client-side</text>
+
+      <!-- Firebase -->
+      <rect x="382" y="460" width="175" height="80" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+      <text x="469" y="487" text-anchor="middle" fill="white" font-size="13" font-weight="600" font-family="Inter,sans-serif">Firebase Platform</text>
+      <line x1="382" y1="498" x2="557" y2="498" stroke="#334155" stroke-width="0.5"/>
+      <text x="469" y="512" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">[External System]</text>
+      <text x="469" y="530" text-anchor="middle" fill="#475569" font-size="9" font-family="Inter,sans-serif">Firestore · Auth · Storage · Hosting</text>
+
+      <!-- WhatsApp Web -->
+      <rect x="715" y="460" width="175" height="80" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+      <text x="802" y="487" text-anchor="middle" fill="white" font-size="13" font-weight="600" font-family="Inter,sans-serif">WhatsApp Web</text>
+      <line x1="715" y1="498" x2="890" y2="498" stroke="#334155" stroke-width="0.5"/>
+      <text x="802" y="512" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">[External System]</text>
+      <text x="802" y="530" text-anchor="middle" fill="#475569" font-size="9" font-family="Inter,sans-serif">Contato direto com o aluno</text>
+
+      <!-- ────────────────────────────────────────────────
+           SETAS
+      ──────────────────────────────────────────────── -->
+
+      <!-- Aluno → Sistema -->
+      <line x1="210" y1="188" x2="337" y2="260" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="257" y="228" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Registra avaliação</text>
+      <text x="257" y="240" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">via totem  [HTTPS]</text>
+
+      <!-- Admin → Sistema -->
+      <line x1="730" y1="188" x2="603" y2="260" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="683" y="228" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Acessa painel</text>
+      <text x="683" y="240" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">admin  [HTTPS]</text>
+
+      <!-- Sistema → EmailJS -->
+      <line x1="355" y1="390" x2="195" y2="460" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="256" y="425" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Envia alerta crítico</text>
+      <text x="256" y="437" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">[HTTPS / API]</text>
+
+      <!-- Sistema → Firebase -->
+      <line x1="470" y1="396" x2="469" y2="460" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="505" y="432" text-anchor="start" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Lê/escreve</text>
+      <text x="505" y="444" text-anchor="start" fill="#64748b" font-size="9" font-family="Inter,sans-serif">[Firebase SDK]</text>
+
+      <!-- Sistema → WhatsApp -->
+      <line x1="585" y1="390" x2="755" y2="460" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="686" y="425" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Abre link</text>
+      <text x="686" y="437" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">de contato  [HTTPS]</text>
+    </svg>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1d4ed8;border:1px solid #3b82f6"></div>Person — ator humano</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1e3a6e;border:2px solid #3b82f6"></div>Software System (foco)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1e293b;border:1px solid #334155"></div>External System</div>
+    <div class="legend-item" style="gap:6px"><svg width="28" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,2"/><polygon points="18,2 26,5 18,8" fill="#475569"/></svg>Relação / dependência</div>
+  </div>
+  <p class="note">C4 Model · Nível 1 · gym-survey-app · 2026</p>
+</body>
+</html>

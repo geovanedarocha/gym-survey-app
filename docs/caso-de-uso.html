@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documento de Caso de Uso — Sistema de Avaliação de Academia</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --primary: #1a1a2e;
+      --accent: #16213e;
+      --highlight: #0f3460;
+      --green: #10b981;
+      --red: #ef4444;
+      --orange: #f97316;
+      --blue: #3b82f6;
+      --gray-light: #f8fafc;
+      --gray-border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: #fff;
+      font-size: 10.5pt;
+      line-height: 1.6;
+    }
+
+    /* ── COVER ── */
+    .cover {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f3460 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 40px;
+      color: white;
+      page-break-after: always;
+      text-align: center;
+    }
+
+    .cover-badge {
+      background: rgba(16,185,129,0.2);
+      border: 1px solid rgba(16,185,129,0.5);
+      color: #6ee7b7;
+      padding: 6px 20px;
+      border-radius: 999px;
+      font-size: 9pt;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .cover h1 {
+      font-size: 32pt;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      max-width: 700px;
+    }
+
+    .cover h1 span { color: #6ee7b7; }
+
+    .cover-subtitle {
+      font-size: 13pt;
+      color: rgba(255,255,255,0.7);
+      max-width: 560px;
+      margin-bottom: 48px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 48px;
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .cover-meta-item { text-align: left; }
+    .cover-meta-label {
+      font-size: 8pt;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .cover-meta-value {
+      font-size: 10pt;
+      color: rgba(255,255,255,0.9);
+      font-weight: 500;
+    }
+
+    .cover-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 32px;
+    }
+
+    /* ── LAYOUT ── */
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 56px;
+    }
+
+    @media print {
+      .page { padding: 32px 48px; }
+      .cover { min-height: auto; padding: 80px 48px; }
+    }
+
+    /* ── SECTION HEADERS ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 40px 0 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--gray-border);
+    }
+
+    .section-number {
+      width: 32px;
+      height: 32px;
+      background: var(--highlight);
+      color: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12pt;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 16pt;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .subsection {
+      font-size: 11pt;
+      font-weight: 600;
+      color: var(--highlight);
+      margin: 24px 0 10px;
+      padding-left: 8px;
+      border-left: 3px solid var(--green);
+    }
+
+    /* ── INTRO / OVERVIEW ── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .overview-card {
+      background: var(--gray-light);
+      border: 1px solid var(--gray-border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    .overview-card .label {
+      font-size: 8pt;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .overview-card .value {
+      font-size: 10.5pt;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ── ACTOR TABLE ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 9.5pt;
+    }
+
+    th {
+      background: var(--primary);
+      color: white;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 9pt;
+      letter-spacing: 0.5px;
+    }
+
+    th:first-child { border-radius: 8px 0 0 0; }
+    th:last-child { border-radius: 0 8px 0 0; }
+
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--gray-border);
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td { background: var(--gray-light); }
+    tr:last-child td:first-child { border-radius: 0 0 0 8px; }
+    tr:last-child td:last-child { border-radius: 0 0 8px 0; }
+
+    /* ── USE CASE CARDS ── */
+    .uc-card {
+      border: 1px solid var(--gray-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 20px 0;
+      page-break-inside: avoid;
+    }
+
+    .uc-header {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--highlight) 100%);
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .uc-id {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 8pt;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 1px;
+    }
+
+    .uc-title {
+      font-size: 11pt;
+      font-weight: 600;
+    }
+
+    .uc-body {
+      padding: 0;
+    }
+
+    .uc-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      border-bottom: 1px solid var(--gray-border);
+    }
+
+    .uc-row:last-child { border-bottom: none; }
+
+    .uc-label {
+      background: #f1f5f9;
+      padding: 10px 16px;
+      font-size: 8.5pt;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: flex-start;
+      padding-top: 12px;
+    }
+
+    .uc-value {
+      padding: 10px 16px;
+      font-size: 9.5pt;
+    }
+
+    .uc-value ol, .uc-value ul {
+      padding-left: 18px;
+    }
+
+    .uc-value li {
+      margin-bottom: 3px;
+    }
+
+    /* ── FLOW DIAGRAM ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 16px 0;
+      align-items: flex-start;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .flow-step-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .flow-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--highlight);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9pt;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .flow-line {
+      width: 2px;
+      height: 28px;
+      background: var(--gray-border);
+      margin: 0 auto;
+    }
+
+    .flow-content {
+      flex: 1;
+      background: var(--gray-light);
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+    }
+
+    .flow-content strong {
+      display: block;
+      font-size: 9.5pt;
+      color: var(--primary);
+      margin-bottom: 2px;
+    }
+
+    .flow-content p {
+      font-size: 9pt;
+      color: var(--text-muted);
+    }
+
+    /* ── TECH STACK ── */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .tech-item {
+      background: var(--gray-light);
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .tech-layer {
+      font-size: 7.5pt;
+      color: var(--green);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .tech-name {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .tech-desc {
+      font-size: 8.5pt;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── DATA MODEL ── */
+    .model-card {
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 12px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5pt;
+      color: #e2e8f0;
+      line-height: 1.8;
+    }
+
+    .model-card .comment { color: #64748b; }
+    .model-card .key { color: #7dd3fc; }
+    .model-card .type { color: #86efac; }
+    .model-card .string { color: #fde68a; }
+
+    /* ── ALERT BOX ── */
+    .alert {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .alert-info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+
+    .alert-warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+    }
+
+    .alert-success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    .alert-icon { font-size: 14pt; flex-shrink: 0; }
+
+    .alert-text { font-size: 9.5pt; }
+    .alert-text strong { display: block; margin-bottom: 3px; }
+
+    /* ── BADGE ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: 600;
+    }
+
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+    .badge-gray { background: #f1f5f9; color: #475569; }
+
+    /* ── PAGE BREAK ── */
+    .page-break { page-break-before: always; padding-top: 40px; }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--gray-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8pt;
+      color: var(--text-muted);
+    }
+
+    p { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ COVER ═══════════════ -->
+<div class="cover">
+  <div class="cover-icon">🏋️</div>
+  <div class="cover-badge">Documento Técnico</div>
+  <h1>Sistema de Avaliação de<br><span>Academia</span></h1>
+  <p class="cover-subtitle">
+    Documento de Caso de Uso — levantamento completo de requisitos,
+    atores, fluxos e arquitetura do sistema de pesquisa de satisfação.
+  </p>
+
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Versão</div>
+      <div class="cover-meta-value">1.0.0</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Data</div>
+      <div class="cover-meta-value">Junho 2026</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Projeto</div>
+      <div class="cover-meta-value">gym-survey-app</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Plataforma</div>
+      <div class="cover-meta-value">Web / Firebase</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CONTEÚDO ═══════════════ -->
+<div class="page">
+
+  <!-- ── 1. VISÃO GERAL ── -->
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <div class="section-title">Visão Geral do Sistema</div>
+  </div>
+
+  <p>
+    O <strong>Sistema de Avaliação de Academia</strong> é uma aplicação web progressiva (PWA)
+    desenvolvida para coletar, armazenar e analisar a satisfação dos alunos de uma academia.
+    O sistema opera em dois contextos distintos: um <strong>totem de autoatendimento</strong>
+    instalado na academia (interface pública) e um <strong>painel administrativo</strong>
+    acessível apenas por gestores autenticados.
+  </p>
+
+  <div class="overview-grid">
+    <div class="overview-card">
+      <div class="label">Objetivo Principal</div>
+      <div class="value">Medir a satisfação dos alunos em tempo real e fornecer dados acionáveis para a gestão da academia</div>
+    </div>
+    <div class="overview-card">
+      <div class="label">Público-Alvo</div>
+      <div class="value">Alunos da academia (totem público) e gestores/administradores (painel privado)</div>
+    </div>
+    <div class="overview-card">
+      <div class="label">Tipo de Sistema</div>
+      <div class="value">Web App estático hospedado no Firebase Hosting + Firestore como banco de dados em tempo real</div>
+    </div>
+    <div class="overview-card">
+      <div class="label">Modelo de Acesso</div>
+      <div class="value">Interface pública (sem login) para o totem + área restrita (login obrigatório) para o dashboard</div>
+    </div>
+  </div>
+
+  <!-- ── 2. ATORES ── -->
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div class="section-title">Atores do Sistema</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ator</th>
+        <th>Tipo</th>
+        <th>Descrição</th>
+        <th>Autenticação</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Aluno / Frequentador</strong></td>
+        <td><span class="badge badge-blue">Primário</span></td>
+        <td>Usuário final que interage com o totem para registrar sua avaliação após o treino.</td>
+        <td><span class="badge badge-gray">Não necessária</span></td>
+      </tr>
+      <tr>
+        <td><strong>Administrador</strong></td>
+        <td><span class="badge badge-green">Primário</span></td>
+        <td>Gestor da academia responsável por analisar feedbacks, monitorar KPIs e gerenciar a equipe cadastrada.</td>
+        <td><span class="badge badge-orange">Firebase Auth (e-mail + senha)</span></td>
+      </tr>
+      <tr>
+        <td><strong>Firebase / Firestore</strong></td>
+        <td><span class="badge badge-gray">Secundário</span></td>
+        <td>Sistema de banco de dados em nuvem que persiste avaliações e dados da equipe em tempo real.</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td><strong>Firebase Storage</strong></td>
+        <td><span class="badge badge-gray">Secundário</span></td>
+        <td>Armazenamento de imagens dos colaboradores cadastrados pelo administrador.</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── 3. CASOS DE USO ── -->
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <div class="section-title">Casos de Uso</div>
+  </div>
+
+  <!-- UC-01 -->
+  <div class="uc-card">
+    <div class="uc-header">
+      <span class="uc-id">UC-01</span>
+      <span class="uc-title">Registrar Avaliação de Satisfação (Totem)</span>
+    </div>
+    <div class="uc-body">
+      <div class="uc-row">
+        <div class="uc-label">Ator Principal</div>
+        <div class="uc-value">Aluno / Frequentador</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pré-condição</div>
+        <div class="uc-value">Nenhuma. O totem está disponível publicamente sem autenticação.</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Descrição</div>
+        <div class="uc-value">
+          O aluno interage com o totem em 5 etapas sequenciais para registrar sua experiência na academia.
+          Ao finalizar, os dados são persistidos no Firestore e o sistema retorna automaticamente ao estado inicial.
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo Principal</div>
+        <div class="uc-value">
+          <ol>
+            <li><strong>Etapa 1 — Nota Geral:</strong> O aluno seleciona uma das 4 opções de experiência: <em>Péssimo</em> 😡, <em>Regular</em> 😐, <em>Bom</em> 😊 ou <em>Excelente</em> 🤩. O sistema emite feedback sonoro ao clicar.</li>
+            <li><strong>Etapa 2 — Tags de Contexto:</strong> Com base na nota geral escolhida, o sistema exibe tags relevantes. Se nota negativa (Péssimo/Regular): "Equipamentos", "Limpeza", "Atendimento", "Lotação". Se positiva (Bom/Excelente): "Professores", "Estrutura", "Clima", "Aparelhagem". O aluno seleciona uma ou mais tags.</li>
+            <li><strong>Etapa 3 — Identificar Colaborador:</strong> O sistema lista os colaboradores cadastrados com nome, cargo e foto. O aluno seleciona quem o atendeu ou opta por "Ninguém".</li>
+            <li><strong>Etapa 4 — Avaliação Estrutural:</strong> O aluno atribui 1 a 5 estrelas para Limpeza e Equipamentos. Opcionalmente informa um telefone ou CPF para contato futuro.</li>
+            <li><strong>Envio:</strong> O sistema salva o feedback no Firestore com timestamp e exibe tela de confirmação.</li>
+            <li><strong>Reset automático:</strong> Após 3 segundos, o totem retorna ao Passo 1 para o próximo usuário.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo Alternativo</div>
+        <div class="uc-value">
+          <ul>
+            <li><strong>[A1]</strong> Na Etapa 3, o aluno pode clicar em "Ninguém" para avançar sem selecionar colaborador.</li>
+            <li><strong>[A2]</strong> Na Etapa 4, o campo de contato é opcional; o aluno pode enviar sem preenchê-lo.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pós-condição</div>
+        <div class="uc-value">Um documento é criado na coleção <code>avaliacoes</code> do Firestore com todos os dados do feedback.</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Regras de Negócio</div>
+        <div class="uc-value">
+          <ul>
+            <li>A Etapa 2 exige ao menos uma tag selecionada para habilitar o botão "Avançar".</li>
+            <li>A Etapa 4 exige notas de Limpeza e Equipamentos maiores que zero para habilitar "Enviar Feedback".</li>
+            <li>Ao registrar uma nota "Péssimo", o sistema consulta as últimas 2 avaliações. Se ambas também forem "Péssimo", um alerta crítico é disparado.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UC-02 -->
+  <div class="uc-card">
+    <div class="uc-header">
+      <span class="uc-id">UC-02</span>
+      <span class="uc-title">Autenticar-se como Administrador</span>
+    </div>
+    <div class="uc-body">
+      <div class="uc-row">
+        <div class="uc-label">Ator Principal</div>
+        <div class="uc-value">Administrador</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pré-condição</div>
+        <div class="uc-value">O administrador possui conta criada no Firebase Authentication do projeto.</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo Principal</div>
+        <div class="uc-value">
+          <ol>
+            <li>O administrador acessa <code>/admin/login</code>.</li>
+            <li>Insere e-mail e senha nos campos do formulário.</li>
+            <li>Clica em "Entrar".</li>
+            <li>O sistema chama <code>signInWithEmailAndPassword</code> no Firebase Auth.</li>
+            <li>Em caso de sucesso, o sistema redireciona para <code>/admin</code> (dashboard).</li>
+          </ol>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo de Exceção</div>
+        <div class="uc-value">
+          <ul>
+            <li><strong>[E1]</strong> Credenciais inválidas: exibe a mensagem "Credenciais inválidas. Tente novamente." abaixo do formulário.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pós-condição</div>
+        <div class="uc-value">Sessão autenticada criada; o administrador tem acesso às rotas protegidas <code>/admin</code> e <code>/admin/equipe</code>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UC-03 -->
+  <div class="uc-card">
+    <div class="uc-header">
+      <span class="uc-id">UC-03</span>
+      <span class="uc-title">Visualizar Dashboard de Satisfação</span>
+    </div>
+    <div class="uc-body">
+      <div class="uc-row">
+        <div class="uc-label">Ator Principal</div>
+        <div class="uc-value">Administrador</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pré-condição</div>
+        <div class="uc-value">Administrador autenticado (UC-02).</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Descrição</div>
+        <div class="uc-value">
+          O painel central do sistema exibe indicadores-chave de desempenho calculados em tempo real
+          sobre as últimas 100 avaliações registradas.
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Funcionalidades Disponíveis</div>
+        <div class="uc-value">
+          <ul>
+            <li><strong>Índice de Satisfação (%):</strong> Percentual de avaliações "Bom" + "Excelente" sobre o total.</li>
+            <li><strong>Área com Mais Reclamações:</strong> A tag com maior frequência de seleção em avaliações negativas.</li>
+            <li><strong>Funcionário Destaque:</strong> O colaborador mais mencionado positivamente.</li>
+            <li><strong>Lista de Feedbacks:</strong> Histórico cronológico das avaliações com nota geral, tags selecionadas, colaborador mencionado e data/hora.</li>
+            <li><strong>Contato do Aluno:</strong> Se preenchido, exibe botão de acesso rápido ao WhatsApp (para números de telefone).</li>
+          </ul>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Atualização em Tempo Real</div>
+        <div class="uc-value">Os dados são sincronizados via <code>onSnapshot</code> do Firestore — novos feedbacks aparecem automaticamente sem recarregar a página.</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pós-condição</div>
+        <div class="uc-value">Nenhuma alteração de estado no banco de dados.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- UC-04 -->
+  <div class="uc-card">
+    <div class="uc-header">
+      <span class="uc-id">UC-04</span>
+      <span class="uc-title">Gerenciar Equipe de Colaboradores</span>
+    </div>
+    <div class="uc-body">
+      <div class="uc-row">
+        <div class="uc-label">Ator Principal</div>
+        <div class="uc-value">Administrador</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pré-condição</div>
+        <div class="uc-value">Administrador autenticado (UC-02). Acesso via <code>/admin/equipe</code>.</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo — Adicionar Colaborador</div>
+        <div class="uc-value">
+          <ol>
+            <li>Preenche nome (máx. 40 caracteres) e cargo (máx. 40 caracteres).</li>
+            <li>Opcionalmente, faz upload de uma foto (JPG/PNG, máx. 5 MB). A imagem é salva no Firebase Storage em <code>/equipe/{imageId}</code>.</li>
+            <li>Clica em "Adicionar Colaborador".</li>
+            <li>O sistema salva o documento na coleção <code>colaboradores</code> do Firestore.</li>
+            <li>O colaborador aparece imediatamente na lista ao lado e também no Passo 3 do totem.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo — Remover Colaborador</div>
+        <div class="uc-value">
+          <ol>
+            <li>Na lista de colaboradores, o administrador clica no botão de exclusão do card correspondente.</li>
+            <li>O sistema remove o documento do Firestore e a imagem associada do Storage (se existir).</li>
+            <li>O colaborador desaparece imediatamente da lista e do totem.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Validações</div>
+        <div class="uc-value">
+          <ul>
+            <li>Nome e cargo são campos obrigatórios.</li>
+            <li>Tamanho máximo da foto: 5 MB.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pós-condição</div>
+        <div class="uc-value">Coleção <code>colaboradores</code> atualizada; alterações refletidas em tempo real no totem público.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UC-05 -->
+  <div class="uc-card">
+    <div class="uc-header">
+      <span class="uc-id">UC-05</span>
+      <span class="uc-title">Contatar Aluno via WhatsApp</span>
+    </div>
+    <div class="uc-body">
+      <div class="uc-row">
+        <div class="uc-label">Ator Principal</div>
+        <div class="uc-value">Administrador</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pré-condição</div>
+        <div class="uc-value">Avaliação registrada com campo "contato" preenchido com número de telefone válido.</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo</div>
+        <div class="uc-value">
+          <ol>
+            <li>No dashboard, o administrador localiza um feedback com número de contato.</li>
+            <li>Clica no botão de WhatsApp exibido na linha do feedback.</li>
+            <li>O sistema abre o WhatsApp Web com o número pré-preenchido em uma nova aba.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo Alternativo</div>
+        <div class="uc-value"><strong>[A1]</strong> Se o contato for um CPF (não-numérico detectado como CPF), o botão de WhatsApp não é exibido — apenas o texto do contato é mostrado.</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pós-condição</div>
+        <div class="uc-value">Nenhuma alteração de estado no sistema; comunicação ocorre externamente via WhatsApp.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UC-06 -->
+  <div class="uc-card">
+    <div class="uc-header">
+      <span class="uc-id">UC-06</span>
+      <span class="uc-title">Encerrar Sessão Administrativa</span>
+    </div>
+    <div class="uc-body">
+      <div class="uc-row">
+        <div class="uc-label">Ator Principal</div>
+        <div class="uc-value">Administrador</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pré-condição</div>
+        <div class="uc-value">Administrador autenticado com sessão ativa.</div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Fluxo</div>
+        <div class="uc-value">
+          <ol>
+            <li>Clica no botão "Sair" no dashboard administrativo.</li>
+            <li>O sistema chama <code>signOut(auth)</code> do Firebase Auth.</li>
+            <li>A sessão é invalidada e o usuário é redirecionado para <code>/admin/login</code>.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="uc-row">
+        <div class="uc-label">Pós-condição</div>
+        <div class="uc-value">Sessão destruída; as rotas protegidas ficam inacessíveis sem novo login.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. FLUXO COMPLETO ── -->
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div class="section-title">Fluxo do Usuário no Totem (Detalhado)</div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-step-connector">
+        <div class="flow-dot">1</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-content">
+        <strong>Etapa 1 — Nota Geral</strong>
+        <p>"Como foi sua experiência hoje?" — Quatro botões com emoji e label (Péssimo / Regular / Bom / Excelente). Som de clique via Web Audio API. Avança automaticamente após seleção (delay 400ms).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-connector">
+        <div class="flow-dot">2</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-content">
+        <strong>Etapa 2 — Tags de Contexto</strong>
+        <p>Tags dinâmicas conforme a nota. Negativas: Equipamentos, Limpeza, Atendimento, Lotação. Positivas: Professores, Estrutura, Clima, Aparelhagem. Multi-seleção permitida. Botão "Avançar" fica pulsante (verde) quando ao menos uma tag está selecionada.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-connector">
+        <div class="flow-dot">3</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-content">
+        <strong>Etapa 3 — Identificação do Colaborador</strong>
+        <p>Lista horizontal com foto, nome e cargo dos colaboradores cadastrados (leitura ao vivo do Firestore). O aluno toca no cartão do colaborador ou na opção "Ninguém". Avanço manual com botão "Avançar".</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-connector">
+        <div class="flow-dot">4</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-content">
+        <strong>Etapa 4 — Avaliação Estrutural</strong>
+        <p>Dois grupos de estrelas (1–5): Limpeza e Equipamentos. Campo de texto opcional para telefone ou CPF. Botão "Enviar Feedback" habilitado somente com ambas as notas preenchidas.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-connector">
+        <div class="flow-dot">5</div>
+      </div>
+      <div class="flow-content">
+        <strong>Etapa 5 — Confirmação</strong>
+        <p>Ícone de check animado + mensagem "Obrigado!". Reset automático após 3 segundos → Etapa 1.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 5. MODELO DE DADOS ── -->
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <div class="section-title">Modelo de Dados (Firestore)</div>
+  </div>
+
+  <p class="subsection">Coleção: <code>avaliacoes</code></p>
+  <div class="model-card">
+    <span class="comment">// Gerado automaticamente ao concluir o totem</span><br>
+    {<br>
+    &nbsp;&nbsp;<span class="key">nota_geral</span>: <span class="string">"Péssimo" | "Regular" | "Bom" | "Excelente"</span>,<br>
+    &nbsp;&nbsp;<span class="key">tags</span>: <span class="type">string[]</span> <span class="comment">// Ex: ["Limpeza", "Equipamentos"]</span>,<br>
+    &nbsp;&nbsp;<span class="key">id_funcionario</span>: <span class="type">string</span> <span class="comment">// ID do doc em "colaboradores" ou "Nenhum"</span>,<br>
+    &nbsp;&nbsp;<span class="key">nota_limpeza</span>: <span class="type">number</span> <span class="comment">// 1 – 5</span>,<br>
+    &nbsp;&nbsp;<span class="key">nota_equipamentos</span>: <span class="type">number</span> <span class="comment">// 1 – 5</span>,<br>
+    &nbsp;&nbsp;<span class="key">contato</span>: <span class="type">string</span> <span class="comment">// Opcional — telefone ou CPF</span>,<br>
+    &nbsp;&nbsp;<span class="key">timestamp</span>: <span class="type">Timestamp</span> <span class="comment">// serverTimestamp() do Firestore</span><br>
+    }
+  </div>
+
+  <p class="subsection">Coleção: <code>colaboradores</code></p>
+  <div class="model-card">
+    <span class="comment">// Gerenciado pelo administrador em /admin/equipe</span><br>
+    {<br>
+    &nbsp;&nbsp;<span class="key">nome</span>: <span class="type">string</span> <span class="comment">// Máx. 40 caracteres</span>,<br>
+    &nbsp;&nbsp;<span class="key">cargo</span>: <span class="type">string</span> <span class="comment">// Máx. 40 caracteres</span>,<br>
+    &nbsp;&nbsp;<span class="key">image</span>: <span class="type">string</span> <span class="comment">// URL do Firebase Storage (opcional)</span><br>
+    }
+  </div>
+
+  <p class="subsection">Firebase Storage</p>
+  <div class="model-card">
+    <span class="comment">// Fotos dos colaboradores</span><br>
+    /equipe/{imageId} <span class="comment">// JPG / PNG, máx. 5 MB</span>
+  </div>
+
+  <!-- ── 6. SEGURANÇA ── -->
+  <div class="section-header">
+    <div class="section-number">6</div>
+    <div class="section-title">Regras de Segurança</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Recurso</th>
+        <th>Operação</th>
+        <th>Permissão</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>avaliacoes</code></td>
+        <td>Criar (create)</td>
+        <td><span class="badge badge-green">Público</span> — qualquer usuário do totem</td>
+      </tr>
+      <tr>
+        <td><code>avaliacoes</code></td>
+        <td>Ler / Atualizar / Deletar</td>
+        <td><span class="badge badge-orange">Apenas admin autenticado</span></td>
+      </tr>
+      <tr>
+        <td><code>colaboradores</code></td>
+        <td>Ler (read)</td>
+        <td><span class="badge badge-green">Público</span> — totem precisa exibir a lista</td>
+      </tr>
+      <tr>
+        <td><code>colaboradores</code></td>
+        <td>Criar / Atualizar / Deletar</td>
+        <td><span class="badge badge-orange">Apenas admin autenticado</span></td>
+      </tr>
+      <tr>
+        <td>Storage <code>/equipe/*</code></td>
+        <td>Leitura de arquivos</td>
+        <td><span class="badge badge-green">Público</span></td>
+      </tr>
+      <tr>
+        <td>Storage <code>/equipe/*</code></td>
+        <td>Upload / Deleção</td>
+        <td><span class="badge badge-orange">Apenas admin autenticado</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── 7. STACK TECNOLÓGICO ── -->
+  <div class="section-header">
+    <div class="section-number">7</div>
+    <div class="section-title">Stack Tecnológico</div>
+  </div>
+
+  <div class="tech-grid">
+    <div class="tech-item">
+      <div class="tech-layer">Frontend</div>
+      <div class="tech-name">Next.js 16 + React 19</div>
+      <div class="tech-desc">SSG com static export para hospedar no Firebase Spark (gratuito)</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-layer">Linguagem</div>
+      <div class="tech-name">TypeScript 5</div>
+      <div class="tech-desc">Modo strict habilitado; alias de paths configurado</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-layer">Estilo</div>
+      <div class="tech-name">Tailwind CSS 4</div>
+      <div class="tech-desc">Utilitário CSS, zero dependência de componentes externos</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-layer">Banco de Dados</div>
+      <div class="tech-name">Firebase Firestore</div>
+      <div class="tech-desc">NoSQL em tempo real — avaliações e colaboradores</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-layer">Autenticação</div>
+      <div class="tech-name">Firebase Auth</div>
+      <div class="tech-desc">E-mail + senha para acesso ao painel administrativo</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-layer">Armazenamento</div>
+      <div class="tech-name">Firebase Storage</div>
+      <div class="tech-desc">Fotos dos colaboradores (máx. 5 MB cada)</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-layer">Hospedagem</div>
+      <div class="tech-name">Firebase Hosting</div>
+      <div class="tech-desc">CDN global, deploy do diretório <code>/out</code></div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-layer">Ícones</div>
+      <div class="tech-name">Lucide React</div>
+      <div class="tech-desc">Biblioteca de ícones SVG</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-layer">Gráficos</div>
+      <div class="tech-name">Recharts 3</div>
+      <div class="tech-desc">Declarado como dependência (disponível para expansão)</div>
+    </div>
+  </div>
+
+  <!-- ── 8. REQUISITOS ── -->
+  <div class="section-header">
+    <div class="section-number">8</div>
+    <div class="section-title">Requisitos Funcionais e Não-Funcionais</div>
+  </div>
+
+  <p class="subsection">Requisitos Funcionais Implementados</p>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Descrição</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>RF-01</td><td>Registrar avaliação de satisfação em 5 etapas (totem público)</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-02</td><td>Apresentar tags de contexto condicionais à nota geral</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-03</td><td>Exibir lista de colaboradores com foto para seleção pelo aluno</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-04</td><td>Permitir avaliação de limpeza e equipamentos (escala 1–5)</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-05</td><td>Coletar dado de contato (telefone/CPF) de forma opcional</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-06</td><td>Persistir avaliações no Firestore com timestamp</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-07</td><td>Resetar totem automaticamente após 3 segundos da confirmação</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-08</td><td>Autenticar administradores via e-mail e senha</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-09</td><td>Exibir KPIs: índice de satisfação, área com mais reclamações, colaborador destaque</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-10</td><td>Listar feedbacks em ordem cronológica no painel admin</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-11</td><td>Adicionar e remover colaboradores da equipe</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-12</td><td>Fazer upload de foto do colaborador para Firebase Storage</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-13</td><td>Ação rápida de WhatsApp para contato com o aluno</td><td><span class="badge badge-green">Implementado</span></td></tr>
+      <tr><td>RF-14</td><td>Disparar alerta quando múltiplas avaliações "Péssimo" consecutivas</td><td><span class="badge badge-green">Implementado</span></td></tr>
+    </tbody>
+  </table>
+
+  <p class="subsection">Requisitos Não-Funcionais</p>
+  <table>
+    <thead>
+      <tr><th>Categoria</th><th>Requisito</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Performance</td><td>Dados em tempo real via <code>onSnapshot</code>; sem necessidade de recarregar a página</td></tr>
+      <tr><td>Disponibilidade</td><td>Firebase Hosting com CDN global — alta disponibilidade sem configuração de servidor</td></tr>
+      <tr><td>Segurança</td><td>Firestore Security Rules impedem leitura não autorizada de avaliações</td></tr>
+      <tr><td>Usabilidade</td><td>Interface touch-friendly para totem; feedback visual (pulsação de botão) e sonoro</td></tr>
+      <tr><td>Escalabilidade</td><td>Arquitetura serverless; Firebase escala automaticamente conforme o volume de acessos</td></tr>
+      <tr><td>Custo</td><td>Compatível com Firebase Spark (plano gratuito) via static export</td></tr>
+      <tr><td>PWA</td><td>Manifest configurado — pode ser instalado como app nativo em tablets do totem</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── 9. OBSERVAÇÕES ── -->
+  <div class="section-header">
+    <div class="section-number">9</div>
+    <div class="section-title">Observações e Pontos de Atenção</div>
+  </div>
+
+  <div class="alert alert-warning">
+    <div class="alert-icon">⚠️</div>
+    <div class="alert-text">
+      <strong>Alerta de Avaliações Críticas</strong>
+      Quando um aluno registra nota "Péssimo" e as 2 avaliações anteriores também são "Péssimo", o sistema registra um alerta crítico. Atualmente este alerta vai apenas para o console do navegador — não há notificação push ou e-mail para o gestor.
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    <div class="alert-icon">ℹ️</div>
+    <div class="alert-text">
+      <strong>Biblioteca Recharts declarada mas não utilizada</strong>
+      O pacote <code>recharts</code> está instalado como dependência, porém nenhum gráfico está renderizado nas páginas atuais. Isso indica planejamento de expansão futura para visualizações gráficas de tendências.
+    </div>
+  </div>
+
+  <div class="alert alert-success">
+    <div class="alert-icon">✅</div>
+    <div class="alert-text">
+      <strong>Arquitetura adequada ao plano gratuito do Firebase</strong>
+      O uso de <code>output: 'export'</code> no Next.js elimina a necessidade de Server-Side Rendering, mantendo o app totalmente compatível com o Firebase Spark (sem custo de Cloud Functions ou Container).
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <div class="doc-footer">
+    <div>Sistema de Avaliação de Academia — Documento de Caso de Uso v1.0</div>
+    <div>Junho 2026 · gym-survey-app</div>
+  </div>
+
+</div>
+</body>
+</html>

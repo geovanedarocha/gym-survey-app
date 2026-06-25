@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Docs — gym-survey-app</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#070d1a;font-family:'Inter',sans-serif;color:white;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 24px}
+    h1{font-size:28px;font-weight:700;margin-bottom:6px}
+    .sub{font-size:14px;color:#64748b;margin-bottom:48px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;width:100%;max-width:900px}
+    a{text-decoration:none}
+    .card{background:#0d1526;border:1px solid #1e293b;border-radius:14px;padding:24px;transition:border-color .2s,transform .2s}
+    .card:hover{border-color:#3b82f6;transform:translateY(-2px)}
+    .card-badge{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;color:#60a5fa}
+    .card h2{font-size:16px;font-weight:700;margin-bottom:6px;color:#f1f5f9}
+    .card p{font-size:12px;color:#64748b;line-height:1.6}
+    .card-level{display:inline-block;margin-top:14px;font-size:10px;font-weight:600;padding:3px 10px;border-radius:999px;background:#1e3a5f;color:#93c5fd}
+    .divider{width:100%;max-width:900px;border:none;border-top:1px solid #1e293b;margin:32px 0}
+    .doc-link{background:#0d1526;border:1px solid #1e293b;border-radius:14px;padding:22px 24px;width:100%;max-width:900px;transition:border-color .2s}
+    .doc-link:hover{border-color:#10b981}
+    .doc-link h2{font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:4px}
+    .doc-link p{font-size:12px;color:#64748b}
+    .footer{margin-top:48px;font-size:11px;color:#334155;font-family:monospace}
+  </style>
+</head>
+<body>
+  <h1>Documentação Técnica</h1>
+  <p class="sub">gym-survey-app · Sistema de Avaliação de Academia · 2026</p>
+
+  <div class="grid">
+    <a href="c1-contexto.html">
+      <div class="card">
+        <div class="card-badge">C4 Model</div>
+        <h2>C1 — Contexto do Sistema</h2>
+        <p>Como o sistema se encaixa no mundo ao seu redor. Atores humanos e sistemas externos (Firebase, EmailJS, WhatsApp).</p>
+        <span class="card-level">Nível 1 — Visão Executiva</span>
+      </div>
+    </a>
+    <a href="c2-container.html">
+      <div class="card">
+        <div class="card-badge">C4 Model</div>
+        <h2>C2 — Containers</h2>
+        <p>Decisões tecnológicas: Web App (Next.js), Firestore, Firebase Auth, Storage e Hosting. Como os containers se comunicam.</p>
+        <span class="card-level">Nível 2 — Arquitetura</span>
+      </div>
+    </a>
+    <a href="c3-componentes.html">
+      <div class="card">
+        <div class="card-badge">C4 Model</div>
+        <h2>C3 — Componentes</h2>
+        <p>Componentes internos da Web Application: páginas, libs, roteamento. Totem, Dashboard, Login, Equipe, Firebase e EmailAlert.</p>
+        <span class="card-level">Nível 3 — Design</span>
+      </div>
+    </a>
+    <a href="c4-codigo.html">
+      <div class="card">
+        <div class="card-badge">C4 Model</div>
+        <h2>C4 — Código</h2>
+        <p>Fluxo detalhado do alerta crítico: checkAlert(), sendCriticalAlertEmail(), integração EmailJS e escrita no Firestore.</p>
+        <span class="card-level">Nível 4 — Código</span>
+      </div>
+    </a>
+  </div>
+
+  <hr class="divider"/>
+
+  <a href="caso-de-uso.html" style="width:100%;max-width:900px;text-decoration:none">
+    <div class="doc-link">
+      <h2>Documento de Caso de Uso</h2>
+      <p>Levantamento completo: 6 UCs, atores, modelo de dados, regras de segurança, stack e requisitos funcionais. Abre no browser para salvar como PDF.</p>
+    </div>
+  </a>
+
+  <p class="footer">gym-survey-app · docs/ · geovanedarocha/gym-survey-app</p>
+</body>
+</html>

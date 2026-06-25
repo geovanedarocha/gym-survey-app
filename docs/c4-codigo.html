@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>C4 — Diagrama de Código</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #070d1a; font-family: 'Inter', sans-serif; color: white; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 24px; }
+    .breadcrumb { display: flex; gap: 8px; align-items: center; font-size: 11px; color: #475569; margin-bottom: 24px; }
+    .breadcrumb span { color: #334155; }
+    .breadcrumb strong { color: #7dd3fc; }
+    h1 { font-size: 22px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #64748b; margin-bottom: 32px; }
+    .diagram-wrap { background: #0d1526; border: 1px solid #1e293b; border-radius: 16px; padding: 8px; width: 100%; max-width: 1060px; }
+    svg { display: block; width: 100%; height: auto; }
+    .legend { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+    .note { margin-top: 28px; font-size: 11px; color: #334155; font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body>
+  <div class="breadcrumb">
+    <span>gym-survey-app</span> / <span>C4 Model</span> / <strong>C4 — Code</strong>
+  </div>
+  <h1>C4 — Diagrama de Código</h1>
+  <p class="subtitle">Fluxo de código do alerta crítico — classes, funções e dependências</p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 1040 700" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#475569"/>
+        </marker>
+        <marker id="arr-r" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#ef4444"/>
+        </marker>
+        <marker id="arr-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#10b981"/>
+        </marker>
+        <marker id="arr-y" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#f59e0b"/>
+        </marker>
+        <marker id="arr-p" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#a855f7"/>
+        </marker>
+      </defs>
+
+      <!-- Background -->
+      <rect width="1040" height="700" fill="#0d1526" rx="12"/>
+
+      <!-- Title -->
+      <text x="520" y="34" text-anchor="middle" fill="#f1f5f9" font-size="16" font-weight="700" font-family="Inter,sans-serif">Fluxo do Alerta Crítico — Nível de Código</text>
+      <text x="520" y="54" text-anchor="middle" fill="#475569" font-size="11" font-family="Inter,sans-serif">Nível 4 — zoom no componente Totem Survey</text>
+
+      <!-- ────────────────────────────────────────────────────────────
+           COMPONENT BOUNDARY: Totem Survey (page.tsx)
+      ──────────────────────────────────────────────────────────── -->
+      <rect x="20" y="68" width="700" height="610" rx="14" fill="none" stroke="#1e3a5f" stroke-width="2" stroke-dasharray="8,4"/>
+      <text x="40" y="86" fill="#1e3a5f" font-size="10" font-weight="600" font-family="Inter,sans-serif" letter-spacing="1">TOTEM SURVEY  [Component: page.tsx]</text>
+
+      <!-- ── Home React Component ── -->
+      <rect x="40" y="96" width="660" height="220" rx="10" fill="#101c30" stroke="#334155" stroke-width="1.5"/>
+      <text x="370" y="116" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">Home  (React Component)</text>
+      <line x1="40" y1="128" x2="700" y2="128" stroke="#334155" stroke-width="0.5"/>
+      <text x="60" y="143" fill="#64748b" font-size="9" font-weight="600" font-family="Inter,sans-serif" letter-spacing="1">STATE</text>
+      <text x="60" y="158" fill="#94a3b8" font-size="10" font-family="JetBrains Mono,monospace">feedback: { nota_geral, tags, id_funcionario, nota_limpeza, nota_equipamentos, contato }</text>
+      <text x="60" y="174" fill="#94a3b8" font-size="10" font-family="JetBrains Mono,monospace">step: number  (1–5)</text>
+      <text x="60" y="190" fill="#94a3b8" font-size="10" font-family="JetBrains Mono,monospace">staffList: Colaborador[]  ← onSnapshot(colaboradores)</text>
+      <text x="60" y="206" fill="#94a3b8" font-size="10" font-family="JetBrains Mono,monospace">isProcessing: boolean</text>
+      <line x1="40" y1="218" x2="700" y2="218" stroke="#334155" stroke-width="0.5"/>
+      <text x="60" y="233" fill="#64748b" font-size="9" font-weight="600" font-family="Inter,sans-serif" letter-spacing="1">HANDLERS</text>
+      <text x="60" y="248" fill="#94a3b8" font-size="10" font-family="JetBrains Mono,monospace">handleExperience(rating)  ·  toggleTag(tag)  ·  handleStaff(id)</text>
+      <text x="60" y="264" fill="#94a3b8" font-size="10" font-family="JetBrains Mono,monospace">submitFeedback(limpeza, equipamentos, contato)  ← etapa 4</text>
+      <text x="60" y="280" fill="#94a3b8" font-size="10" font-family="JetBrains Mono,monospace">checkAlert()  ←  chamada dentro de submitFeedback</text>
+      <text x="60" y="296" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">src/app/page.tsx:44</text>
+
+      <!-- ── submitFeedback ── -->
+      <rect x="40" y="336" width="300" height="160" rx="10" fill="#14253a" stroke="#3b82f6" stroke-width="2"/>
+      <text x="190" y="358" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="Inter,sans-serif">submitFeedback()</text>
+      <line x1="40" y1="370" x2="340" y2="370" stroke="#3b82f6" stroke-width="0.5" opacity="0.5"/>
+      <text x="60" y="385" fill="#93c5fd" font-size="9" font-weight="600" font-family="Inter,sans-serif">[Method]</text>
+      <text x="60" y="401" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">1. playSound('click')</text>
+      <text x="60" y="416" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">2. await checkAlert()</text>
+      <text x="60" y="431" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">   ↳ dispara alerta se crítico</text>
+      <text x="60" y="446" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">3. addDoc(avaliacoes, feedback)</text>
+      <text x="60" y="461" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">4. setStep(5) → tela de sucesso</text>
+      <text x="60" y="484" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">page.tsx:133–160</text>
+
+      <!-- ── checkAlert ── -->
+      <rect x="360" y="336" width="340" height="218" rx="10" fill="#1a1500" stroke="#f59e0b" stroke-width="2"/>
+      <text x="530" y="358" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="Inter,sans-serif">checkAlert()</text>
+      <line x1="360" y1="370" x2="700" y2="370" stroke="#f59e0b" stroke-width="0.5" opacity="0.5"/>
+      <text x="380" y="385" fill="#fde68a" font-size="9" font-weight="600" font-family="Inter,sans-serif">[Method — Gatilho do Alerta]</text>
+      <text x="380" y="401" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">SE nota_geral ≠ "Péssimo" → sai</text>
+      <text x="380" y="416" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Promise.all([</text>
+      <text x="380" y="431" fill="#6ee7b7" font-size="9" font-family="Inter,sans-serif">  getDocs(avaliacoes, desc, limit 2),</text>
+      <text x="380" y="446" fill="#a5f3fc" font-size="9" font-family="Inter,sans-serif">  getDoc(config/alertas)</text>
+      <text x="380" y="461" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">])</text>
+      <text x="380" y="477" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">SE last 2 === "Péssimo" → alerta!</text>
+      <text x="380" y="492" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">  SE config.ativo &amp;&amp; config.emailGestor:</text>
+      <text x="380" y="507" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">    await sendCriticalAlertEmail()</text>
+      <text x="380" y="528" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">page.tsx:115–131</text>
+      <text x="380" y="542" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">condição: 3 Péssimo consecutivos</text>
+
+      <!-- ── AdminDashboard component (Config Panel) ── -->
+      <rect x="40" y="516" width="300" height="148" rx="10" fill="#1a0a2e" stroke="#a855f7" stroke-width="2"/>
+      <text x="190" y="538" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="Inter,sans-serif">Admin Dashboard</text>
+      <line x1="40" y1="550" x2="340" y2="550" stroke="#a855f7" stroke-width="0.5" opacity="0.5"/>
+      <text x="60" y="565" fill="#e9d5ff" font-size="9" font-weight="600" font-family="Inter,sans-serif">[Component — Config de Alerta]</text>
+      <text x="60" y="581" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">getDoc(config/alertas) → pré-carrega</text>
+      <text x="60" y="596" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">saveAlertConfig() → setDoc()</text>
+      <text x="60" y="611" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Estado: alertEmail · alertAtivo</text>
+      <text x="60" y="626" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Toggle UI + input + botão salvar</text>
+      <text x="60" y="647" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">src/app/admin/page.tsx:10–180</text>
+
+      <!-- ────────────────────────────────────────────────────────────
+           EXTERNAL CODE ELEMENTS
+      ──────────────────────────────────────────────────────────── -->
+
+      <!-- sendCriticalAlertEmail -->
+      <rect x="740" y="68" width="280" height="180" rx="10" fill="#2d1a00" stroke="#f59e0b" stroke-width="2"/>
+      <text x="880" y="90" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="Inter,sans-serif">sendCriticalAlertEmail()</text>
+      <line x1="740" y1="102" x2="1020" y2="102" stroke="#f59e0b" stroke-width="0.5" opacity="0.5"/>
+      <text x="758" y="117" fill="#fde68a" font-size="9" font-weight="600" font-family="Inter,sans-serif">[Function — lib/emailAlert.ts]</text>
+      <text x="758" y="134" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">params: emailGestor, { tags, timestamp }</text>
+      <text x="758" y="150" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">valida NEXT_PUBLIC_EMAILJS_*</text>
+      <text x="758" y="166" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">monta templateParams:</text>
+      <text x="758" y="181" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">  to_email · alerta · detalhes</text>
+      <text x="758" y="195" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">  tags · timestamp</text>
+      <text x="758" y="212" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">emailjs.send(svcId, tplId, params, key)</text>
+      <text x="758" y="235" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">src/lib/emailAlert.ts:1–30</text>
+
+      <!-- Firestore (external) -->
+      <rect x="740" y="278" width="280" height="130" rx="10" fill="#164e3a" stroke="#10b981" stroke-width="1.5"/>
+      <text x="880" y="300" text-anchor="middle" fill="white" font-size="12" font-weight="600" font-family="Inter,sans-serif">Cloud Firestore</text>
+      <line x1="740" y1="312" x2="1020" y2="312" stroke="#10b981" stroke-width="0.5" opacity="0.4"/>
+      <text x="880" y="326" text-anchor="middle" fill="#6ee7b7" font-size="9" font-family="Inter,sans-serif">[External — DB]</text>
+      <text x="758" y="344" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">avaliacoes — checkAlert lê últimas 2</text>
+      <text x="758" y="359" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">config/alertas — lê emailGestor, ativo</text>
+      <text x="758" y="374" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">config/alertas — admin escreve config</text>
+      <text x="758" y="392" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">firebase/firestore SDK</text>
+
+      <!-- EmailJS SDK (external) -->
+      <rect x="740" y="430" width="280" height="120" rx="10" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+      <text x="880" y="452" text-anchor="middle" fill="white" font-size="12" font-weight="600" font-family="Inter,sans-serif">EmailJS Browser SDK</text>
+      <line x1="740" y1="464" x2="1020" y2="464" stroke="#334155" stroke-width="0.5"/>
+      <text x="880" y="478" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">[External — SaaS]</text>
+      <text x="758" y="496" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">emailjs.send(serviceId, templateId,</text>
+      <text x="758" y="511" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">  templateParams, publicKey)</text>
+      <text x="758" y="526" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">@emailjs/browser ^4.4.1</text>
+      <text x="758" y="540" fill="#64748b" font-size="8" font-family="JetBrains Mono,monospace">Envia via HTTPS → servidor EmailJS</text>
+
+      <!-- config/alertas document -->
+      <rect x="740" y="572" width="280" height="100" rx="10" fill="#14202e" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="880" y="594" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="600" font-family="Inter,sans-serif">config/alertas</text>
+      <line x1="740" y1="606" x2="1020" y2="606" stroke="#475569" stroke-width="0.5"/>
+      <text x="880" y="620" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">[Firestore Document]</text>
+      <text x="758" y="638" fill="#475569" font-size="8" font-family="JetBrains Mono,monospace">emailGestor: string</text>
+      <text x="758" y="651" fill="#475569" font-size="8" font-family="JetBrains Mono,monospace">ativo: boolean</text>
+      <text x="758" y="664" fill="#475569" font-size="8" font-family="JetBrains Mono,monospace">Read: public · Write: admin only</text>
+
+      <!-- ── ARROWS ── -->
+
+      <!-- Home → submitFeedback (composition) -->
+      <line x1="190" y1="316" x2="190" y2="336" stroke="#3b82f6" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="200" y="330" fill="#60a5fa" font-size="9" font-family="Inter,sans-serif">chama</text>
+
+      <!-- Home → checkAlert (composition) -->
+      <line x1="530" y1="316" x2="530" y2="336" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr-y)"/>
+      <text x="540" y="330" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">chama</text>
+
+      <!-- submitFeedback → checkAlert -->
+      <line x1="340" y1="400" x2="360" y2="400" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-y)"/>
+      <text x="350" y="394" text-anchor="middle" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">await</text>
+
+      <!-- checkAlert → sendCriticalAlertEmail -->
+      <line x1="700" y1="390" x2="740" y2="158" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-y)"/>
+      <text x="728" y="310" text-anchor="end" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">await</text>
+      <text x="728" y="322" text-anchor="end" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">se ativo</text>
+
+      <!-- checkAlert → Firestore (read avaliacoes + config) -->
+      <line x1="700" y1="430" x2="740" y2="360" stroke="#10b981" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-g)"/>
+      <text x="740" y="400" text-anchor="end" fill="#6ee7b7" font-size="9" font-family="Inter,sans-serif">getDocs + getDoc</text>
+
+      <!-- sendCriticalAlertEmail → EmailJS SDK -->
+      <line x1="880" y1="248" x2="880" y2="430" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-y)"/>
+      <text x="892" y="348" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">emailjs.send()</text>
+
+      <!-- Firestore → config/alertas document -->
+      <line x1="880" y1="408" x2="880" y2="572" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+      <!-- AdminDashboard → Firestore (saveAlertConfig) -->
+      <path d="M 340 580 Q 560 540 740 360" fill="none" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-p)"/>
+      <text x="540" y="480" text-anchor="middle" fill="#a855f7" font-size="9" font-family="Inter,sans-serif">setDoc(config/alertas)</text>
+
+      <!-- submitFeedback → Firestore (addDoc avaliacoes) -->
+      <path d="M 340 460 Q 560 460 740 340" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-g)"/>
+      <text x="490" y="446" text-anchor="middle" fill="#10b981" font-size="9" font-family="Inter,sans-serif">addDoc(avaliacoes)</text>
+    </svg>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#101c30;border:1px solid #334155"></div>React Component</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#14253a;border:2px solid #3b82f6"></div>Method (submitFeedback)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1a1500;border:2px solid #f59e0b"></div>Method (checkAlert)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2d1a00;border:2px solid #f59e0b"></div>Function (emailAlert.ts)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#164e3a;border:1px solid #10b981"></div>Firestore DB</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1e293b;border:1px solid #334155"></div>EmailJS SDK</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1a0a2e;border:2px solid #a855f7"></div>Admin Dashboard</div>
+  </div>
+  <p class="note">C4 Model · Nível 4 · gym-survey-app · 2026</p>
+</body>
+</html>
