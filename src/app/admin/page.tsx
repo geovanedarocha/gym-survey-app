@@ -3,23 +3,40 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { db, auth } from "@/lib/firebase";
-import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { Activity, MessageCircle, BarChart3, Users, Star, LogOut } from "lucide-react";
+import { Activity, MessageCircle, BarChart3, Users, Star, LogOut, Bell, BellOff, Save, Info } from "lucide-react";
 
 function AdminDashboardInner() {
   const router = useRouter();
   
   const [data, setData] = useState<any[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [alertEmail, setAlertEmail] = useState("");
+  const [alertAtivo, setAlertAtivo] = useState(false);
+  const [alertSaving, setAlertSaving] = useState(false);
+  const [alertSaved, setAlertSaved] = useState(false);
+  const emailjsConfigured = !!(
+    process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID &&
+    process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID &&
+    process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
+  );
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         setIsAuthenticated(true);
-        // Set up realtime listener if authenticated
+
+        getDoc(doc(db, "config", "alertas")).then((snap) => {
+          if (snap.exists()) {
+            const d = snap.data() as { emailGestor?: string; ativo?: boolean };
+            setAlertEmail(d.emailGestor ?? "");
+            setAlertAtivo(d.ativo ?? false);
+          }
+        });
+
         const q = query(collection(db, "avaliacoes"), orderBy("timestamp", "desc"), limit(100));
-        
+
         const unsubscribeData = onSnapshot(q, (snapshot) => {
           const docs = snapshot.docs.map(doc => {
             const rawData = doc.data();
@@ -77,6 +94,22 @@ function AdminDashboardInner() {
   });
   const bestStaffId = Object.keys(staffCounts).sort((a,b) => staffCounts[b] - staffCounts[a])[0];
 
+  const saveAlertConfig = async () => {
+    setAlertSaving(true);
+    try {
+      await setDoc(doc(db, "config", "alertas"), {
+        emailGestor: alertEmail.trim(),
+        ativo: alertAtivo,
+      });
+      setAlertSaved(true);
+      setTimeout(() => setAlertSaved(false), 3000);
+    } catch (e) {
+      console.error("Erro ao salvar configuração de alerta", e);
+    } finally {
+      setAlertSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8 font-sans overflow-auto">
       <header className="mb-10 flex flex-col items-start gap-4 border-b border-zinc-800 pb-6">
@@ -115,6 +148,92 @@ function AdminDashboardInner() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
           <p className="text-zinc-400 flex items-center gap-2 mb-2"><Star size={18}/> Colaborador TOP</p>
           <p className="text-3xl font-bold text-blue-400">{bestStaffId ? `ID: ${bestStaffId}` : "--"}</p>
+        </div>
+      </div>
+
+      {/* Alert Config Panel */}
+      <div className="w-full max-w-5xl mb-8">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+            <div className="flex items-center gap-3">
+              {alertAtivo ? (
+                <Bell className="text-amber-400 w-5 h-5" />
+              ) : (
+                <BellOff className="text-zinc-500 w-5 h-5" />
+              )}
+              <h2 className="text-lg font-bold text-zinc-200">Alerta Crítico por E-mail</h2>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${alertAtivo ? "bg-amber-500/20 text-amber-400" : "bg-zinc-700 text-zinc-400"}`}>
+                {alertAtivo ? "ATIVO" : "INATIVO"}
+              </span>
+            </div>
+            <button
+              onClick={() => setAlertAtivo(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${alertAtivo ? "bg-amber-500" : "bg-zinc-700"}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alertAtivo ? "translate-x-6" : "translate-x-1"}`} />
+            </button>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            {!emailjsConfigured && (
+              <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-sm">
+                <Info className="text-amber-400 w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div className="text-amber-300 space-y-1">
+                  <p className="font-semibold">EmailJS não configurado</p>
+                  <p className="text-amber-400/80">
+                    Para ativar o envio real de e-mails, crie uma conta em{" "}
+                    <span className="font-mono text-amber-300">emailjs.com</span>, crie um
+                    serviço e template, e defina no seu <span className="font-mono">.env.local</span>:
+                  </p>
+                  <pre className="mt-2 text-xs bg-zinc-950/60 rounded-lg p-3 text-amber-200 font-mono leading-relaxed">
+{`NEXT_PUBLIC_EMAILJS_SERVICE_ID=service_xxxxxxx
+NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=template_xxxxxxx
+NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=xxxxxxxxxxxxxxx`}
+                  </pre>
+                  <p className="text-amber-400/70 text-xs">
+                    O template deve ter as variáveis: <span className="font-mono">{"{{to_email}}"}</span>,{" "}
+                    <span className="font-mono">{"{{alerta}}"}</span>,{" "}
+                    <span className="font-mono">{"{{detalhes}}"}</span>,{" "}
+                    <span className="font-mono">{"{{tags}}"}</span>,{" "}
+                    <span className="font-mono">{"{{timestamp}}"}</span>.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-sm text-zinc-400 mb-1.5">
+                  E-mail do gestor para receber alertas
+                </label>
+                <input
+                  type="email"
+                  value={alertEmail}
+                  onChange={e => setAlertEmail(e.target.value)}
+                  placeholder="gestor@academia.com"
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={saveAlertConfig}
+                  disabled={alertSaving || !alertEmail.trim()}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 ${
+                    alertSaved
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                      : "bg-amber-500 hover:bg-amber-400 text-zinc-950"
+                  }`}
+                >
+                  <Save className="w-4 h-4" />
+                  {alertSaved ? "Salvo!" : alertSaving ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-500">
+              O alerta é disparado automaticamente quando 3 ou mais avaliações &quot;Péssimo&quot; consecutivas são registradas no totem.
+            </p>
+          </div>
         </div>
       </div>
 
