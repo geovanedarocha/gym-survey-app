@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Hot reload: monta o código-fonte do host dentro do container
+      - .:/app
+      # Preserva o node_modules do container (evita conflito com o host)
+      - /app/node_modules
+      # Preserva o cache de build do Next.js
+      - /app/.next
+    env_file:
+      - .env.local
+    environment:
+      # Necessário para hot reload funcionar via polling dentro do Docker
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
