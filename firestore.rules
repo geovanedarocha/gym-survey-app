@@ -2,19 +2,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /avaliacoes/{avaliacao} {
-      // Admin pode ler tudo
+      // Admin pode ler tudo (ou filtrar por unit_id)
       allow read: if request.auth != null;
       // Totem (público) pode apenas criar avaliações
       allow create: if true; 
-      // Apenas admin altera
+      // Apenas admin altera ou deleta
       allow update, delete: if request.auth != null;
     }
     
     match /colaboradores/{colaborador} {
-      // Totem pode ler colaboradores
+      // Totem e clientes podem ler colaboradores
       allow read: if true; 
-      // Apenas admin pode gerenciar a equipe
+      // Apenas admin autenticado pode gerenciar a equipe
       allow create, update, delete: if request.auth != null;
+    }
+
+    match /configuracoes/{config} {
+      // Totem pode ler configurações da sua unidade (email de alerta, etc.)
+      allow read: if true;
+      // Apenas admin autenticado pode alterar as configurações
+      allow write: if request.auth != null;
+    }
+
+    match /mail/{mail} {
+      // Disparo de notificação por e-mail pelo totem
+      allow create: if true;
     }
   }
 }

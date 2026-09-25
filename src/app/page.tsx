@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc } from "firebase/firestore";
-import { User, Star, CheckCircle, ArrowLeft, Music } from "lucide-react";
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc } from "firebase/firestore";
+import { User, Star, CheckCircle, Music, Settings, ShieldCheck } from "lucide-react";
 
 // Tags dinâmicas por tipo de nota
 const negativeTags = ["Equipamentos", "Limpeza", "Atendimento", "Estrutura", "Banheiros", "Ar-condicionado", "Organização dos Pesos", "Som/Música"];
@@ -12,7 +13,8 @@ const positiveTags = ["Professores", "Atendimento da Recepção", "Equipamentos"
 // Web Audio API Synth for Zero-Dependency sounds
 const playSound = (type: 'click' | 'success') => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -36,7 +38,7 @@ const playSound = (type: 'click' | 'success') => {
       osc.start();
       osc.stop(ctx.currentTime + 0.5);
     }
-  } catch (e) {
+  } catch {
     // Ignore audio errors
   }
 };
@@ -53,26 +55,31 @@ function SkyFitLogo() {
   );
 }
 
-// ──────────────────────────────────────────────
-// FLUXO DE STEPS:
-//  1  → Nota Geral
-//  2  → Participou de Aula Coletiva? (SIM/NÃO)
-//  3  → Selecionar Professor de Aula Coletiva  (só se SIM)
-//  4  → Avaliar Aula Coletiva (estrelas)        (só se SIM)
-//  5  → Tags de Contexto (motivos)
-//  6  → Selecionar Recepcionista
-//  7  → Avaliar Recepcionista (estrelas)
-//  8  → Selecionar Professor Musculação
-//  9  → Avaliar Professor Musculação (estrelas)
-// 10  → Sugestão + Contato
-// 11  → Tela de Confirmação
-// ──────────────────────────────────────────────
+interface Colaborador {
+  id: string;
+  nome: string;
+  cargo?: string;
+  setor?: string;
+  image?: string;
+  unit_id?: string;
+}
 
-export default function Home() {
+// ──────────────────────────────────────────────
+// CONTEÚDO PRINCIPAL DO TOTEM
+// ──────────────────────────────────────────────
+function HomeContent() {
+  const searchParams = useSearchParams();
+
+  // Multi-tenant: Isolamento por unidade da academia
+  const [unitId, setUnitId] = useState<string>("");
+  const [unitLoaded, setUnitLoaded] = useState<boolean>(false);
+  const [isConfiguringUnit, setIsConfiguringUnit] = useState<boolean>(false);
+  const [tempUnitInput, setTempUnitInput] = useState<string>("");
+
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [staffList, setStaffList] = useState<any[]>([]);
-  const [academiaEmail, setAcademiaEmail] = useState("skyfitb.gestao@gmail.com");
+  const [staffList, setStaffList] = useState<Colaborador[]>([]);
+  const [academiaEmail, setAcademiaEmail] = useState("");
   const [feedback, setFeedback] = useState({
     nota_geral: "",
     tags: [] as string[],
@@ -95,28 +102,81 @@ export default function Home() {
     contato: "",
   });
 
-  // Fetch staff dynamically (sem filtro de unit_id aqui — o totem usa parâmetro de URL)
+  // 1. Carregar e persistir a unidade via URL query ou localStorage
   useEffect(() => {
-    const q = query(collection(db, "colaboradores"), orderBy("nome", "asc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setStaffList(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    return () => unsubscribe();
-  }, []);
+    const urlUnit = searchParams.get("unit");
+    if (urlUnit && urlUnit.trim()) {
+      const clean = urlUnit.trim().toLowerCase();
+      setUnitId(clean);
+      setTempUnitInput(clean);
+      try {
+        localStorage.setItem("skyfit_unit_id", clean);
+      } catch {
+        // ignore
+      }
+    } else {
+      try {
+        const stored = localStorage.getItem("skyfit_unit_id");
+        if (stored && stored.trim()) {
+          const cleanStored = stored.trim().toLowerCase();
+          setUnitId(cleanStored);
+          setTempUnitInput(cleanStored);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    setUnitLoaded(true);
+  }, [searchParams]);
 
-  // Fetch academy notification email
+  // 2. Buscar colaboradores FILTRADOS EXCLUSIVAMENTE pela unidade ativa
   useEffect(() => {
-    const docRef = doc(db, "configuracoes", "geral");
+    if (!unitId) {
+      setStaffList([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, "colaboradores"),
+      where("unit_id", "==", unitId)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const list = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<Colaborador, "id">),
+        }));
+        list.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+        setStaffList(list);
+      },
+      (err) => {
+        console.error("Erro ao carregar colaboradores da unidade:", err);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [unitId]);
+
+  // 3. Buscar e-mail de notificação isolado da unidade
+  useEffect(() => {
+    if (!unitId) return;
+
+    const docRef = doc(db, "configuracoes", unitId);
     const unsubscribeConfig = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.email_gestao) {
           setAcademiaEmail(data.email_gestao);
+          return;
         }
       }
+      setAcademiaEmail(unitId.includes("@") ? unitId : "skyfitb.gestao@gmail.com");
     });
+
     return () => unsubscribeConfig();
-  }, []);
+  }, [unitId]);
 
   const getTagsOptions = () => {
     if (feedback.nota_geral === "Ruim" || feedback.nota_geral === "Regular") {
@@ -142,42 +202,42 @@ export default function Home() {
     if (isProcessing) return;
     playSound('click');
     setIsProcessing(true);
-    setFeedback(prev => ({ ...prev, aula_coletiva_participou: participou }));
+    setFeedback((prev) => ({ ...prev, aula_coletiva_participou: participou }));
     setTimeout(() => {
       if (participou) {
-        setStep(3); // Selecionar professor da aula coletiva
+        setStep(3); // Selecionar professor da coletiva
       } else {
-        setStep(5); // Pular direto para tags
+        setStep(5); // Pula para tags
       }
       setIsProcessing(false);
     }, 300);
   };
 
-  // Step 3: Selecionar professor de aula coletiva
-  const handleSelectAulaColetivaProfessor = (id: string, nome: string, aula: string) => {
+  // Step 3: Selecionar professor da aula coletiva
+  const handleSelectAulaColetivaProfessor = (id: string, name: string, aula: string) => {
     if (isProcessing) return;
     playSound('click');
     setIsProcessing(true);
-    setFeedback(prev => ({
+    setFeedback((prev) => ({
       ...prev,
       aula_coletiva_professor_id: id,
-      aula_coletiva_professor_nome: nome,
+      aula_coletiva_professor_nome: name,
       aula_coletiva_professor_aula: aula,
     }));
     setTimeout(() => {
-      setStep(4); // Avaliar aula coletiva
+      setStep(4); // Avaliar coletiva
       setIsProcessing(false);
     }, 400);
   };
 
-  // Step 4: Avaliar aula coletiva → vai para tags (step 5)
+  // Step 4: Avaliar aula coletiva (estrelas)
   const handleRateAulaColetiva = (rating: number) => {
     if (isProcessing) return;
     playSound('click');
     setIsProcessing(true);
-    setFeedback(prev => ({ ...prev, aula_coletiva_nota: rating }));
+    setFeedback((prev) => ({ ...prev, aula_coletiva_nota: rating }));
     setTimeout(() => {
-      setStep(5);
+      setStep(5); // Segue para tags
       setIsProcessing(false);
     }, 400);
   };
@@ -198,23 +258,23 @@ export default function Home() {
     playSound('click');
     setIsProcessing(true);
     setTimeout(() => {
-      setStep(6); // Go to Receptionist Selection
+      setStep(6); // Recepção
       setIsProcessing(false);
     }, 300);
   };
 
-  // Step 6: Recepção Selection
+  // Step 6: Recepção
   const handleSelectRecepcionista = (id: string, name: string) => {
     if (isProcessing) return;
     playSound('click');
     setIsProcessing(true);
     setFeedback(prev => ({ ...prev, recepcionista_id: id, recepcionista_nome: name }));
     setTimeout(() => {
-      if (id === "Nenhum") {
-        setFeedback(prev => ({ ...prev, recepcionista_nota: 0 }));
-        setStep(8); // Skip rating, go to musculação
+      if (id === "Nenhum" || id === "Ninguem") {
+        setFeedback(prev => ({ ...prev, recepcionista_nota: id === "Ninguem" ? 1 : 0 }));
+        setStep(8); // Pula para musculação
       } else {
-        setStep(7); // Rate receptionist
+        setStep(7); // Avalia recepcionista
       }
       setIsProcessing(false);
     }, 400);
@@ -227,7 +287,7 @@ export default function Home() {
     setIsProcessing(true);
     setFeedback(prev => ({ ...prev, recepcionista_nota: rating }));
     setTimeout(() => {
-      setStep(8); // Go to Professor Selection
+      setStep(8); // Musculação
       setIsProcessing(false);
     }, 400);
   };
@@ -239,11 +299,11 @@ export default function Home() {
     setIsProcessing(true);
     setFeedback(prev => ({ ...prev, professor_id: id, professor_nome: name }));
     setTimeout(() => {
-      if (id === "Nenhum") {
-        setFeedback(prev => ({ ...prev, professor_nota: 0 }));
-        setStep(10); // Skip rating, go to suggestions
+      if (id === "Nenhum" || id === "Ninguem") {
+        setFeedback(prev => ({ ...prev, professor_nota: id === "Ninguem" ? 1 : 0 }));
+        setStep(10); // Pula para sugestões
       } else {
-        setStep(9); // Rate professor
+        setStep(9); // Avalia professor
       }
       setIsProcessing(false);
     }, 400);
@@ -256,7 +316,7 @@ export default function Home() {
     setIsProcessing(true);
     setFeedback(prev => ({ ...prev, professor_nota: rating }));
     setTimeout(() => {
-      setStep(10); // Go to Suggestions
+      setStep(10); // Sugestões
       setIsProcessing(false);
     }, 400);
   };
@@ -269,6 +329,7 @@ export default function Home() {
 
     const finalFeedback = {
       ...feedback,
+      unit_id: unitId,
       sugestao,
       contato,
       timestamp: serverTimestamp(),
@@ -280,7 +341,7 @@ export default function Home() {
       console.error("Erro ao salvar avaliação: ", e);
     }
 
-    // Email dispatch
+    // Email dispatch para a academia correspondente
     try {
       const aulaColetivaSec = feedback.aula_coletiva_participou
         ? `<hr style="border: none; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
@@ -292,6 +353,7 @@ export default function Home() {
       const emailContent = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e4e4e7; border-radius: 16px; background-color: #fafafa; color: #18181b;">
           <h2 style="color: #ea580c; border-bottom: 2px solid #ea580c; padding-bottom: 8px;">Nova Avaliação de Satisfação - SkyFit</h2>
+          <p style="font-size: 13px; color: #71717a;">Unidade: <strong>${unitId}</strong></p>
           
           <p style="font-size: 16px; margin: 16px 0;"><strong>Experiência Geral:</strong> 
             <span style="font-size: 18px; font-weight: bold; color: ${
@@ -325,15 +387,17 @@ export default function Home() {
           <p style="margin-top: 16px;"><strong>Contato deixado para retorno:</strong> ${contato || "Nenhum contato deixado."}</p>
           
           <p style="font-size: 11px; color: #71717a; margin-top: 24px; text-align: center; border-top: 1px solid #e4e4e7; padding-top: 12px;">
-            Este e-mail foi gerado automaticamente pelo Totem de Pesquisa da SkyFit. Sincronizado em: ${new Date().toLocaleString('pt-BR')}
+            Este e-mail foi gerado automaticamente pelo Totem da SkyFit (${unitId}). Sincronizado em: ${new Date().toLocaleString('pt-BR')}
           </p>
         </div>
       `;
 
+      const targetEmail = academiaEmail || (unitId.includes("@") ? unitId : "skyfitb.gestao@gmail.com");
+
       await addDoc(collection(db, "mail"), {
-        to: academiaEmail,
+        to: targetEmail,
         message: {
-          subject: `Avaliação SkyFit: ${feedback.nota_geral} | Recepção: ${feedback.recepcionista_nota}/5 | Musculação: ${feedback.professor_nota}/5`,
+          subject: `Avaliação SkyFit (${unitId}): ${feedback.nota_geral} | Recepção: ${feedback.recepcionista_nota}/5 | Musculação: ${feedback.professor_nota}/5`,
           html: emailContent,
         }
       });
@@ -373,10 +437,108 @@ export default function Home() {
     }
   }, [step]);
 
-  // Filter staff by sector
-  const receptionists = staffList.filter(s => s.setor === "recepcao");
-  const professors = staffList.filter(s => s.setor === "musculacao");
-  const coletivaProfessors = staffList.filter(s => s.setor === "coletiva");
+  // Carregamento inicial da unidade
+  if (!unitLoaded) {
+    return (
+      <div className="h-screen bg-zinc-950 flex justify-center items-center text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+          <p className="text-zinc-500 text-sm">Carregando totem...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Tela de configuração do Totem se nenhuma unidade estiver vinculada
+  if (!unitId || isConfiguringUnit) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6">
+        <SkyFitLogo />
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+            <ShieldCheck size={32} />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Vincular Unidade do Totem</h2>
+          <p className="text-zinc-400 text-sm mb-6">
+            Informe o e-mail ou identificador da academia para carregar exclusivamente a equipe desta unidade e isolar os resultados.
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!tempUnitInput.trim()) return;
+              const clean = tempUnitInput.trim().toLowerCase();
+              setUnitId(clean);
+              try {
+                localStorage.setItem("skyfit_unit_id", clean);
+              } catch {
+                // ignore
+              }
+              setIsConfiguringUnit(false);
+            }}
+            className="space-y-4 text-left"
+          >
+            <div>
+              <label className="block text-xs font-semibold uppercase text-zinc-400 mb-2">
+                E-mail da Unidade / Login
+              </label>
+              <input
+                type="email"
+                value={tempUnitInput}
+                onChange={(e) => setTempUnitInput(e.target.value)}
+                placeholder="ex: skyfitsalto@gmail.com"
+                className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl p-3.5 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] text-sm"
+            >
+              Salvar e Iniciar Totem
+            </button>
+            {unitId && isConfiguringUnit && (
+              <button
+                type="button"
+                onClick={() => setIsConfiguringUnit(false)}
+                className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-semibold rounded-xl text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+            )}
+          </form>
+          <div className="mt-6 pt-4 border-t border-zinc-800 text-xs text-zinc-500 flex flex-col gap-2">
+            <p>Você também pode abrir o totem pelo link no Dashboard Executivo.</p>
+            <a href="/admin/login" className="text-emerald-400 hover:underline">
+              Acessar Painel Administrativo →
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Filtragem da equipe exclusiva da unidade ativa
+  const receptionists = staffList.filter((s) => s.setor === "recepcao");
+  const professors = staffList.filter((s) => s.setor === "musculacao");
+  const coletivaProfessors = staffList.filter((s) => s.setor === "coletiva");
+
+  // Indicador sutil da unidade ativa no rodapé
+  const unitBadge = (
+    <div className="fixed bottom-3 right-3 flex items-center gap-2 bg-zinc-900/80 backdrop-blur border border-zinc-800 px-3 py-1.5 rounded-full text-xs text-zinc-400 select-none z-10 shadow-lg">
+      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+      <span className="font-mono text-zinc-300">{unitId}</span>
+      <button
+        onClick={() => {
+          setTempUnitInput(unitId);
+          setIsConfiguringUnit(true);
+        }}
+        className="text-zinc-500 hover:text-zinc-200 ml-1 transition-colors p-0.5"
+        title="Alterar unidade deste totem"
+      >
+        <Settings size={13} />
+      </button>
+    </div>
+  );
 
   // ──────────────────────────────────────────────
   // RENDER STEPS
@@ -385,7 +547,7 @@ export default function Home() {
   // Step 1: Nota Geral
   if (step === 1) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <h1 className="text-3xl md:text-5xl font-bold mb-8 md:mb-12 text-center tracking-tight">Como foi sua experiência hoje?</h1>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 w-full max-w-5xl">
@@ -406,6 +568,7 @@ export default function Home() {
             </button>
           ))}
         </div>
+        {unitBadge}
       </div>
     );
   }
@@ -413,7 +576,7 @@ export default function Home() {
   // Step 2: Participou de Aula Coletiva?
   if (step === 2) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <div className="flex items-center justify-center gap-3 mb-4">
           <Music className="w-8 h-8 text-purple-400" />
@@ -446,6 +609,7 @@ export default function Home() {
         >
           Voltar
         </button>
+        {unitBadge}
       </div>
     );
   }
@@ -453,7 +617,7 @@ export default function Home() {
   // Step 3: Selecionar Professor de Aula Coletiva
   if (step === 3) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <h1 className="text-3xl md:text-5xl font-bold mb-3 text-center tracking-tight">Qual aula coletiva você fez?</h1>
         <p className="text-zinc-400 text-lg md:text-xl mb-8 text-center">Selecione o professor e a aula</p>
@@ -479,9 +643,10 @@ export default function Home() {
           ))}
 
           {coletivaProfessors.length === 0 && (
-            <div className="text-zinc-500 text-xl flex items-center justify-center w-full min-h-[120px] text-center">
-              Nenhum professor de aula coletiva cadastrado.<br />
-              <span className="text-sm mt-2">Acesse Admin → Gerir Equipe para cadastrar.</span>
+            <div className="flex-shrink-0 flex flex-col items-center justify-center p-8 min-w-[260px] bg-zinc-900 border border-dashed border-zinc-800 rounded-3xl text-zinc-500 text-center">
+              <Music className="w-12 h-12 text-zinc-600 mb-3" />
+              <p className="font-semibold text-zinc-400">Nenhum professor de coletiva cadastrado</p>
+              <p className="text-xs text-zinc-600 mt-1">Cadastre sua equipe no Painel Admin</p>
             </div>
           )}
         </div>
@@ -492,6 +657,7 @@ export default function Home() {
         >
           Voltar
         </button>
+        {unitBadge}
       </div>
     );
   }
@@ -499,7 +665,7 @@ export default function Home() {
   // Step 4: Avaliar Aula Coletiva (estrelas)
   if (step === 4) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <div className="flex items-center gap-2 mb-3 text-center">
           <Music className="w-7 h-7 text-purple-400 flex-shrink-0" />
@@ -524,6 +690,7 @@ export default function Home() {
         >
           Voltar
         </button>
+        {unitBadge}
       </div>
     );
   }
@@ -532,7 +699,7 @@ export default function Home() {
   if (step === 5) {
     const { title, options } = getTagsOptions();
     return (
-      <div className="flex flex-col items-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto pt-8">
+      <div className="relative flex flex-col items-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto pt-8">
         <SkyFitLogo />
         <h1 className="text-3xl md:text-5xl font-bold mb-6 md:mb-10 text-center tracking-tight">{title}</h1>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 w-full max-w-5xl mb-8">
@@ -555,7 +722,7 @@ export default function Home() {
         </div>
         <div className="flex gap-4">
           <button
-            onClick={() => setStep(2)}
+            onClick={() => setStep(feedback.aula_coletiva_participou ? 4 : 2)}
             className="px-10 py-6 min-h-[60px] rounded-full text-xl font-bold bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-all text-zinc-400"
           >
             Voltar
@@ -572,6 +739,7 @@ export default function Home() {
             Avançar
           </button>
         </div>
+        {unitBadge}
       </div>
     );
   }
@@ -579,7 +747,7 @@ export default function Home() {
   // Step 6: Recepção Selection
   if (step === 6) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <h1 className="text-3xl md:text-5xl font-bold mb-3 text-center tracking-tight">Quem te atendeu hoje na recepção?</h1>
         <p className="text-zinc-400 text-xl mb-8">Toque para avaliar o atendimento</p>
@@ -605,22 +773,11 @@ export default function Home() {
           ))}
 
           {receptionists.length === 0 && (
-            <>
-              {["Amanda", "Jciane", "Tainá"].map((name) => (
-                <button
-                  key={name}
-                  disabled={isProcessing}
-                  onClick={() => handleSelectRecepcionista(`mock-${name}`, name)}
-                  className="flex-shrink-0 snap-center flex flex-col items-center p-6 min-h-[60px] min-w-[200px] md:min-w-[240px] bg-zinc-900 border border-zinc-800 rounded-3xl hover:bg-zinc-800 hover:border-zinc-700 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50"
-                >
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full mb-6 bg-zinc-800 flex items-center justify-center border-4 border-zinc-700 pointer-events-none">
-                    <User className="w-16 h-16 text-zinc-500" />
-                  </div>
-                  <h2 className="text-2xl font-bold">{name}</h2>
-                  <p className="text-emerald-500 text-lg font-medium">Recepção (Demo)</p>
-                </button>
-              ))}
-            </>
+            <div className="flex-shrink-0 flex flex-col items-center justify-center p-8 min-w-[240px] bg-zinc-900 border border-dashed border-zinc-800 rounded-3xl text-zinc-500 text-center">
+              <User className="w-12 h-12 text-zinc-600 mb-3" />
+              <p className="font-semibold text-zinc-400">Nenhum recepcionista cadastrado</p>
+              <p className="text-xs text-zinc-600 mt-1">Cadastre sua equipe no Painel Admin</p>
+            </div>
           )}
 
           {/* Ninguém me atendeu */}
@@ -635,6 +792,7 @@ export default function Home() {
             <p className="text-red-600 text-sm text-center mt-1">Registrar falta de atendimento</p>
           </button>
         </div>
+
         {/* Pular discreto */}
         <button
           onClick={() => handleSelectRecepcionista("Nenhum", "Nenhum")}
@@ -642,6 +800,7 @@ export default function Home() {
         >
           Pular esta etapa
         </button>
+        {unitBadge}
       </div>
     );
   }
@@ -649,7 +808,7 @@ export default function Home() {
   // Step 7: Recepção Rating
   if (step === 7) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <h1 className="text-2xl md:text-5xl font-bold mb-3 text-center tracking-tight">Avalie o atendimento de {feedback.recepcionista_nome}:</h1>
         <p className="text-zinc-400 text-xl mb-10">Escolha uma nota de 1 a 5 estrelas</p>
@@ -664,6 +823,7 @@ export default function Home() {
         >
           Voltar
         </button>
+        {unitBadge}
       </div>
     );
   }
@@ -671,10 +831,10 @@ export default function Home() {
   // Step 8: Professor Musculação Selection
   if (step === 8) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
-        <h1 className="text-3xl md:text-5xl font-bold mb-3 text-center tracking-tight">Quem te atendeu na sala de musculação hoje?</h1>
-        <p className="text-zinc-400 text-xl mb-8">Toque para avaliar a experiência com o professor</p>
+        <h1 className="text-3xl md:text-5xl font-bold mb-3 text-center tracking-tight">Quem te atendeu na musculação?</h1>
+        <p className="text-zinc-400 text-xl mb-8">Professor / Instrutor em sala</p>
 
         <div className="flex overflow-x-auto snap-x gap-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
           {professors.map((staff) => (
@@ -697,8 +857,10 @@ export default function Home() {
           ))}
 
           {professors.length === 0 && (
-            <div className="text-zinc-500 text-xl flex items-center justify-center w-full min-h-[100px]">
-              Nenhum professor cadastrado ainda.
+            <div className="flex-shrink-0 flex flex-col items-center justify-center p-8 min-w-[240px] bg-zinc-900 border border-dashed border-zinc-800 rounded-3xl text-zinc-500 text-center">
+              <User className="w-12 h-12 text-zinc-600 mb-3" />
+              <p className="font-semibold text-zinc-400">Nenhum professor cadastrado</p>
+              <p className="text-xs text-zinc-600 mt-1">Cadastre sua equipe no Painel Admin</p>
             </div>
           )}
 
@@ -714,6 +876,7 @@ export default function Home() {
             <p className="text-red-600 text-sm text-center mt-1">Registrar falta de atendimento</p>
           </button>
         </div>
+
         {/* Pular discreto */}
         <button
           onClick={() => handleSelectProfessor("Nenhum", "Nenhum")}
@@ -721,6 +884,7 @@ export default function Home() {
         >
           Pular esta etapa
         </button>
+        {unitBadge}
       </div>
     );
   }
@@ -728,7 +892,7 @@ export default function Home() {
   // Step 9: Professor Musculação Rating
   if (step === 9) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <h1 className="text-2xl md:text-5xl font-bold mb-3 text-center tracking-tight">Avalie o atendimento do professor {feedback.professor_nome}:</h1>
         <p className="text-zinc-400 text-xl mb-10">Escolha uma nota de 1 a 5 estrelas</p>
@@ -743,6 +907,7 @@ export default function Home() {
         >
           Voltar
         </button>
+        {unitBadge}
       </div>
     );
   }
@@ -750,21 +915,34 @@ export default function Home() {
   // Step 10: Sugestão + Contato
   if (step === 10) {
     return (
-      <StepSuggestions onSubmit={submitFeedback} isProcessing={isProcessing} onBack={() => setStep(8)} />
+      <div className="relative min-h-screen bg-zinc-950">
+        <StepSuggestions
+          onSubmit={submitFeedback}
+          isProcessing={isProcessing}
+          onBack={() => {
+            if (feedback.professor_id && feedback.professor_id !== "Nenhum" && feedback.professor_id !== "Ninguem") {
+              setStep(9);
+            } else {
+              setStep(8);
+            }
+          }}
+        />
+        {unitBadge}
+      </div>
     );
   }
 
   // Step 11: Confirmação
   if (step === 11) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <div className="w-40 h-40 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mb-8 animate-bounce transition-all">
           <CheckCircle className="w-24 h-24" />
         </div>
         <h1 className="text-5xl font-bold mb-4 text-center">Obrigado!</h1>
         <p className="text-2xl text-emerald-400 font-semibold text-center max-w-2xl">
-          Sua avaliação foi registrada e enviada para a gerência. Bom treino!
+          Sua avaliação foi registrada e enviada para a gerência da unidade {unitId}. Bom treino!
         </p>
       </div>
     );
@@ -783,7 +961,7 @@ function StepSuggestions({ onSubmit, isProcessing, onBack }: { onSubmit: (s: str
   };
 
   return (
-    <div className="flex flex-col items-center min-h-full bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto pt-8">
+    <div className="flex flex-col items-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto pt-8">
       <SkyFitLogo />
       <div className="w-full max-w-3xl space-y-8 pb-10">
         <h1 className="text-3xl md:text-5xl font-bold text-center tracking-tight">Falta muito pouco!</h1>
@@ -864,5 +1042,22 @@ function RatingGroup({ value, onChange, color = "text-orange-500", glowColor = "
         </button>
       ))}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen bg-zinc-950 flex justify-center items-center text-white">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+            <p className="text-zinc-500 text-sm">Iniciando pesquisa SkyFit...</p>
+          </div>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }

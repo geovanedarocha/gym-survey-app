@@ -19,9 +19,10 @@ export default function AdminLogin() {
     setError("");
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cleanEmail = email.trim().toLowerCase();
+      await signInWithEmailAndPassword(auth, cleanEmail, password);
       router.push("/admin");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setError("Credenciais inválidas. Tente novamente.");
     } finally {

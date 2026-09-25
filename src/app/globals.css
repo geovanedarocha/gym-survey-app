@@ -1,7 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 body {
-  @apply bg-background text-text;
+  background-color: #09090b;
+  color: #f4f4f5;
 }

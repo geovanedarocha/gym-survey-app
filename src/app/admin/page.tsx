@@ -3,9 +3,9 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { db, auth } from "@/lib/firebase";
-import { collection, query, onSnapshot, doc, setDoc, where } from "firebase/firestore";
+import { collection, query, onSnapshot, where } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { Activity, MessageCircle, BarChart3, Users, Star, LogOut, Mail, Check, Phone, ExternalLink } from "lucide-react";
+import { Activity, MessageCircle, BarChart3, Users, Star, LogOut, Check, Phone, ExternalLink, Copy } from "lucide-react";
 
 function AdminDashboardInner() {
   const router = useRouter();
@@ -13,17 +13,21 @@ function AdminDashboardInner() {
   const [data, setData] = useState<any[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [unitId, setUnitId] = useState<string>("");
-  const [gymEmail, setGymEmail] = useState("");
-  const [isSavingEmail, setIsSavingEmail] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<"idle" | "success" | "error">("idle");
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Auth and evaluations listener
   useEffect(() => {
+    let unsubscribeData: (() => void) | null = null;
+
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         setIsAuthenticated(true);
-        const userEmail = user.email || "";
+        const userEmail = (user.email || "").toLowerCase().trim();
         setUnitId(userEmail);
+
+        if (unsubscribeData) {
+          unsubscribeData();
+        }
 
         // Filtrar avaliações apenas desta academia (unit_id = email do usuário logado)
         const q = query(
@@ -31,7 +35,7 @@ function AdminDashboardInner() {
           where("unit_id", "==", userEmail)
         );
         
-        const unsubscribeData = onSnapshot(q, (snapshot) => {
+        unsubscribeData = onSnapshot(q, (snapshot) => {
           const docs: any[] = snapshot.docs.map(d => {
             const rawData = d.data();
             const date = rawData.timestamp?.toDate() || new Date();
@@ -50,35 +54,28 @@ function AdminDashboardInner() {
           });
           setData(docs.slice(0, 100));
         }, (err) => {
-          console.error("Erro ao escutar dados admin", err);
+          if (err.code !== "permission-denied") {
+            console.error("Erro ao escutar dados admin:", err);
+          }
         });
-
-        return () => unsubscribeData();
       } else {
+        if (unsubscribeData) {
+          unsubscribeData();
+          unsubscribeData = null;
+        }
+        setData([]);
         setIsAuthenticated(false);
         router.push("/admin/login");
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      if (unsubscribeData) {
+        unsubscribeData();
+      }
+      unsubscribeAuth();
+    };
   }, [router]);
-
-  // Settings listener (email) — isolado por unit_id
-  useEffect(() => {
-    if (isAuthenticated && unitId) {
-      const docRef = doc(db, "configuracoes", unitId);
-      const unsubscribeConfig = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const d = docSnap.data();
-          if (d.email_gestao) setGymEmail(d.email_gestao);
-        } else {
-          // Padrão: email do próprio usuário logado
-          setGymEmail(unitId);
-        }
-      });
-      return () => unsubscribeConfig();
-    }
-  }, [isAuthenticated, unitId]);
 
   if (isAuthenticated === null) {
     return <div className="h-screen bg-zinc-950 flex justify-center items-center text-white">Verificando acesso...</div>;
@@ -87,27 +84,6 @@ function AdminDashboardInner() {
   if (isAuthenticated === false) {
     return null; // Will redirect
   }
-
-  const handleSaveEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!unitId) return;
-    setIsSavingEmail(true);
-    setEmailStatus("idle");
-    try {
-      // Salvar configuração isolada por academia (unit_id)
-      const docRef = doc(db, "configuracoes", unitId);
-      await setDoc(docRef, { email_gestao: gymEmail, unit_id: unitId }, { merge: true });
-      setEmailStatus("success");
-      setTimeout(() => setEmailStatus("idle"), 3000);
-    } catch (err) {
-      console.error("Erro ao salvar e-mail", err);
-      setEmailStatus("error");
-    } finally {
-      setIsSavingEmail(false);
-    }
-  };
-
-  // --- KPI CALCULATIONS ---
   const total = data.length || 1;
   const boas = data.filter(d => d.nota_geral === "Bom" || d.nota_geral === "Excelente").length;
   const taxaSatisfacao = ((boas / total) * 100).toFixed(1);
@@ -161,6 +137,19 @@ function AdminDashboardInner() {
   })).sort((a, b) => b.media - a.media || b.votos - a.votos);
   const topProf = topProfList[0];
 
+  const totemUrl = typeof window !== 'undefined' && unitId ? `${window.location.origin}/?unit=${encodeURIComponent(unitId)}` : '';
+
+  const handleCopyTotemLink = async () => {
+    if (!totemUrl) return;
+    try {
+      await navigator.clipboard.writeText(totemUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (e) {
+      console.error("Erro ao copiar link:", e);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8 font-sans overflow-auto">
       {/* SkyFit Header Logo */}
@@ -168,17 +157,29 @@ function AdminDashboardInner() {
         <img src="/logo.png" alt="SkyFit" className="h-16 w-auto object-contain" />
       </div>
 
-      <header className="mb-10 flex flex-col items-start gap-4 border-b border-zinc-800 pb-6">
+      <header className="mb-6 flex flex-col items-start gap-4 border-b border-zinc-800 pb-6">
         <div className="flex w-full justify-between items-center flex-wrap gap-4">
-          <h1 className="text-4xl font-bold flex items-center gap-4">
-            <Activity className="text-[#10B981] w-10 h-10 animate-pulse" />
-            Dashboard Executivo
-          </h1>
+          <div>
+            <h1 className="text-4xl font-bold flex items-center gap-4">
+              <Activity className="text-[#10B981] w-10 h-10 animate-pulse" />
+              Dashboard Executivo
+            </h1>
+            <p className="text-zinc-400 text-sm mt-1">
+              Unidade ativa: <span className="font-mono text-emerald-400 font-semibold">{unitId}</span>
+            </p>
+          </div>
           <div className="flex gap-3 flex-wrap">
             <button 
+              onClick={handleCopyTotemLink}
+              className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2 px-4 rounded-xl transition-colors border border-zinc-700 font-medium"
+              title="Copiar link da pesquisa para configurar o totem desta unidade"
+            >
+              {copiedLink ? <Check size={18} className="text-emerald-400" /> : <Copy size={18} />}
+              {copiedLink ? "Link Copiado!" : "Copiar Link do Totem"}
+            </button>
+            <button 
               onClick={() => {
-                const url = `${window.location.origin}/?unit=${encodeURIComponent(unitId)}`;
-                window.open(url, '_blank');
+                if (totemUrl) window.open(totemUrl, '_blank');
               }}
               className="flex items-center gap-2 bg-[#10B981]/10 hover:bg-[#10B981]/20 text-[#10B981] py-2 px-4 rounded-xl transition-colors border border-[#10B981]/30 font-medium"
             >
@@ -197,6 +198,22 @@ function AdminDashboardInner() {
               <LogOut size={18} /> Sair
             </button>
           </div>
+        </div>
+
+        {/* Banner do Link do Totem */}
+        <div className="w-full bg-zinc-900/90 border border-emerald-500/30 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-[0_0_20px_rgba(16,185,129,0.06)]">
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-xs uppercase tracking-wider font-bold text-emerald-400">Link Oficial do Totem (Isolado por Unidade)</span>
+            <span className="font-mono text-sm text-zinc-300 truncate">{totemUrl || "Carregando endereço..."}</span>
+            <span className="text-xs text-zinc-500">Abra este link no tablet/totem da sua unidade para carregar apenas a sua equipe e isolar suas avaliações.</span>
+          </div>
+          <button
+            onClick={handleCopyTotemLink}
+            className="self-start md:self-center flex-shrink-0 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-semibold py-2 px-3 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            {copiedLink ? <Check size={14} /> : <Copy size={14} />}
+            {copiedLink ? "Copiado!" : "Copiar"}
+          </button>
         </div>
       </header>
 
@@ -220,128 +237,81 @@ function AdminDashboardInner() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 w-full max-w-6xl">
-        {/* Main interactions list */}
-        <div className="lg:col-span-2">
-          <h2 className="text-2xl font-bold text-zinc-300 mb-6">Últimas 100 Interações</h2>
-          <div className="space-y-6">
-            {data.length === 0 ? (
-              <p className="text-zinc-500 animate-pulse">Aguardando dados ao vivo...</p>
-            ) : (
-              data.map((item) => {
-                const onlyNumbers = item.contato ? item.contato.replace(/\D/g, "") : "";
-                const hasPhone = onlyNumbers.length >= 10;
+      <div className="w-full max-w-6xl">
+        <h2 className="text-2xl font-bold text-zinc-300 mb-6">Últimas 100 Interações</h2>
+        <div className="space-y-6">
+          {data.length === 0 ? (
+            <p className="text-zinc-500 animate-pulse">Aguardando dados ao vivo...</p>
+          ) : (
+            data.map((item) => {
+              const onlyNumbers = item.contato ? item.contato.replace(/\D/g, "") : "";
+              const hasPhone = onlyNumbers.length >= 10;
 
-                return (
-                  <div key={item.id} className="bg-zinc-900 border border-zinc-850 rounded-2xl p-6 flex flex-col gap-4 text-base font-sans">
-                    <div className="flex flex-wrap justify-between items-center border-b border-zinc-800 pb-3 gap-2">
-                      <span className="text-zinc-500 font-mono text-sm">[{item.dateLabel} {item.timeLabel}]</span>
-                      <span className={`font-bold px-3 py-1 rounded-full text-xs ${
-                        item.nota_geral === 'Ruim' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
-                        item.nota_geral === 'Regular' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
-                        item.nota_geral === 'Bom' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-[#10B981] border border-[#10B981]/20'
-                      }`}>
-                        Experiência: {item.nota_geral || 'N/A'}
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-zinc-300">
-                      <div>
-                        <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Destaques (Tags)</p>
-                        <p className="mt-1 font-semibold text-zinc-200">{item.tags && item.tags.length > 0 ? item.tags.join(", ") : "--"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Recepção</p>
-                        <p className="mt-1 font-semibold text-purple-400">
-                          {item.recepcionista_nome && item.recepcionista_nome !== "Nenhum" 
-                            ? `${item.recepcionista_nome} (${item.recepcionista_nota || 0}/5 ⭐)` 
-                            : "Não avaliado"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Musculação</p>
-                        <p className="mt-1 font-semibold text-blue-400">
-                          {item.professor_nome && item.professor_nome !== "Nenhum" 
-                            ? `${item.professor_nome} (${item.professor_nota || 0}/5 ⭐)` 
-                            : "Não avaliado"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {item.sugestao && (
-                      <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
-                        <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Sugestão do Cliente</p>
-                        <p className="text-zinc-200 font-mono italic">"{item.sugestao}"</p>
-                      </div>
-                    )}
-
-                    {(item.contato || hasPhone) && (
-                      <div className="flex justify-between items-center bg-zinc-950/40 p-3 rounded-xl border border-zinc-850 flex-wrap gap-2">
-                        <span className="text-zinc-400 flex items-center gap-2 text-sm">
-                          <Phone size={14} className="text-emerald-500 animate-pulse" />
-                          Retorno solicitado para: <strong className="text-white font-mono">{item.contato}</strong>
-                        </span>
-                        {hasPhone && (
-                          <a 
-                            href={`https://api.whatsapp.com/send?phone=55${onlyNumbers}&text=Ol%C3%A1!%20Sou%20o%20gestor%20da%20academia%20SkyFit.%20Recebemos%20seu%20feedback%20no%20totem%20e%20gostaria%20de%20conversar%20mais%20sobre%20sua%20sugest%C3%A3o.`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="bg-[#10B981] text-zinc-950 px-4 py-2 text-xs font-bold rounded-lg hover:bg-emerald-400 transition flex items-center gap-1.5"
-                          >
-                            <MessageCircle size={14} /> Acionar no Zap
-                          </a>
-                        )}
-                      </div>
-                    )}
+              return (
+                <div key={item.id} className="bg-zinc-900 border border-zinc-850 rounded-2xl p-6 flex flex-col gap-4 text-base font-sans">
+                  <div className="flex flex-wrap justify-between items-center border-b border-zinc-800 pb-3 gap-2">
+                    <span className="text-zinc-500 font-mono text-sm">[{item.dateLabel} {item.timeLabel}]</span>
+                    <span className={`font-bold px-3 py-1 rounded-full text-xs ${
+                      item.nota_geral === 'Ruim' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                      item.nota_geral === 'Regular' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                      item.nota_geral === 'Bom' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-[#10B981] border border-[#10B981]/20'
+                    }`}>
+                      Experiência: {item.nota_geral || 'N/A'}
+                    </span>
                   </div>
-                )
-              })
-            )}
-          </div>
-        </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-zinc-300">
+                    <div>
+                      <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Destaques (Tags)</p>
+                      <p className="mt-1 font-semibold text-zinc-200">{item.tags && item.tags.length > 0 ? item.tags.join(", ") : "--"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Recepção</p>
+                      <p className="mt-1 font-semibold text-purple-400">
+                        {item.recepcionista_nome && item.recepcionista_nome !== "Nenhum" 
+                          ? `${item.recepcionista_nome} (${item.recepcionista_nota || 0}/5 ⭐)` 
+                          : "Não avaliado"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Musculação</p>
+                      <p className="mt-1 font-semibold text-blue-400">
+                        {item.professor_nome && item.professor_nome !== "Nenhum" 
+                          ? `${item.professor_nome} (${item.professor_nota || 0}/5 ⭐)` 
+                          : "Não avaliado"}
+                      </p>
+                    </div>
+                  </div>
 
-        {/* Sidebar settings */}
-        <div className="bg-zinc-900 border border-zinc-850 p-6 rounded-2xl h-fit">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-zinc-200">
-            <Mail className="text-orange-500 w-5 h-5" />
-            Configuração de E-mail
-          </h2>
-          <p className="text-zinc-400 text-sm mb-6">
-            Defina o e-mail de destino da administração. Todas as novas pesquisas finalizadas enviarão um relatório para este e-mail.
-          </p>
+                  {item.sugestao && (
+                    <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                      <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Sugestão do Cliente</p>
+                      <p className="text-zinc-200 font-mono italic">&ldquo;{item.sugestao}&rdquo;</p>
+                    </div>
+                  )}
 
-          <form onSubmit={handleSaveEmail} className="space-y-4">
-            <div>
-              <label className="block text-zinc-400 text-sm mb-2 font-medium">E-mail da Gestão</label>
-              <input 
-                type="email" 
-                value={gymEmail}
-                onChange={e => setGymEmail(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-orange-500 text-sm"
-                placeholder="skyfitb.gestao@gmail.com"
-                required
-              />
-            </div>
-            
-            <button 
-              type="submit"
-              disabled={isSavingEmail}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-            >
-              {isSavingEmail ? "Salvando..." : "Salvar Configuração"}
-            </button>
-
-            {emailStatus === "success" && (
-              <p className="text-emerald-500 text-xs flex items-center gap-1.5 justify-center">
-                <Check size={14} /> Salvo com sucesso!
-              </p>
-            )}
-            {emailStatus === "error" && (
-              <p className="text-red-500 text-xs text-center">
-                Erro ao salvar as configurações.
-              </p>
-            )}
-          </form>
+                  {(item.contato || hasPhone) && (
+                    <div className="flex justify-between items-center bg-zinc-950/40 p-3 rounded-xl border border-zinc-850 flex-wrap gap-2">
+                      <span className="text-zinc-400 flex items-center gap-2 text-sm">
+                        <Phone size={14} className="text-emerald-500 animate-pulse" />
+                        Retorno solicitado para: <strong className="text-white font-mono">{item.contato}</strong>
+                      </span>
+                      {hasPhone && (
+                        <a 
+                          href={`https://api.whatsapp.com/send?phone=55${onlyNumbers}&text=Ol%C3%A1!%20Sou%20o%20gestor%20da%20academia%20SkyFit.%20Recebemos%20seu%20feedback%20no%20totem%20e%20gostaria%20de%20conversar%20mais%20sobre%20sua%20sugest%C3%A3o.`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="bg-[#10B981] text-zinc-950 px-4 py-2 text-xs font-bold rounded-lg hover:bg-emerald-400 transition flex items-center gap-1.5"
+                        >
+                          <MessageCircle size={14} /> Acionar no Zap
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
         </div>
       </div>
     </div>
