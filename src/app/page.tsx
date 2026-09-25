@@ -64,7 +64,7 @@ export default function Home() {
   }, []);
 
   const getTagsOptions = () => {
-    if (feedback.nota_geral === "Péssimo" || feedback.nota_geral === "Regular") {
+    if (feedback.nota_geral === "Ruim" || feedback.nota_geral === "Regular") {
       return { title: "O que podemos melhorar?", options: negativeTags };
     }
     return { title: "O que você mais gostou?", options: positiveTags };
@@ -113,17 +113,17 @@ export default function Home() {
   };
 
   const checkAlert = async () => {
-    if (feedback.nota_geral !== "Péssimo") return;
+    if (feedback.nota_geral !== "Ruim") return;
     
-    // Check last 2 to see if they were also "Péssimo"
+    // Check last 2 to see if they were also "Ruim"
     try {
       const q = query(collection(db, "avaliacoes"), orderBy("timestamp", "desc"), limit(2));
       const querySnapshot = await getDocs(q);
       const docs = querySnapshot.docs.map(doc => doc.data());
       
-      const allPessimo = docs.length === 2 && docs.every(d => d.nota_geral === "Péssimo");
+      const allPessimo = docs.length === 2 && docs.every(d => d.nota_geral === "Ruim");
       if (allPessimo) {
-        console.warn("⚠️ ALERTA CRÍTICO: Múltiplas avaliações 'Péssimo' consecutivas detectadas! Verifique o atendimento.");
+        console.warn("⚠️ ALERTA CRÍTICO: Múltiplas avaliações 'Ruim' consecutivas detectadas! Verifique o atendimento.");
       }
     } catch (e) {
       console.error("Erro ao checar alertas", e);
@@ -188,7 +188,7 @@ export default function Home() {
         <h1 className="text-4xl md:text-5xl font-bold mb-16 text-center tracking-tight">Como foi sua experiência hoje?</h1>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 w-full max-w-5xl">
           {[
-            { label: "Péssimo", emoji: "😡", color: "bg-red-500/20 hover:bg-red-500/40 text-red-500 border-red-500/50" },
+            { label: "Ruim", emoji: "😡", color: "bg-red-500/20 hover:bg-red-500/40 text-red-500 border-red-500/50" },
             { label: "Regular", emoji: "😐", color: "bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 border-orange-500/50" },
             { label: "Bom", emoji: "🙂", color: "bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 border-blue-500/50" },
             { label: "Excelente", emoji: "🤩", color: "bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 border-emerald-500/50" },

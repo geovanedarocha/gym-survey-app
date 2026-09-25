@@ -62,7 +62,7 @@ function AdminDashboardInner() {
   // Worst tag
   const tagCounts: Record<string, number> = {};
   data.forEach(d => {
-    if (d.nota_geral === "Péssimo" || d.nota_geral === "Regular") {
+    if (d.nota_geral === "Ruim" || d.nota_geral === "Regular") {
       d.tags?.forEach((t: string) => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
     }
   });
@@ -132,7 +132,7 @@ function AdminDashboardInner() {
                 <div key={item.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex gap-4 itens-center justify-start text-lg font-mono flex-wrap">
                   <span className="text-zinc-500 min-w-[200px]">[{item.dateLabel} {item.timeLabel}]</span>
                   <span className={`min-w-[120px] font-bold ${
-                    item.nota_geral === 'Péssimo' ? 'text-red-500' :
+                    item.nota_geral === 'Ruim' ? 'text-red-500' :
                     item.nota_geral === 'Regular' ? 'text-orange-400' :
                     item.nota_geral === 'Bom' ? 'text-blue-400' : 'text-[#10B981]'
                   }`}>
