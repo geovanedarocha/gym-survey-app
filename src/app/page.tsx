@@ -321,17 +321,30 @@ function HomeContent() {
     }, 400);
   };
 
+// Sanitização de entradas contra injeção de HTML
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
   // Step 10 → 11: Submit Feedback
   const submitFeedback = async (sugestao: string, contato: string) => {
     if (isProcessing) return;
     playSound('click');
     setIsProcessing(true);
 
+    const cleanSugestao = (sugestao || "").trim().slice(0, 1000);
+    const cleanContato = (contato || "").trim().slice(0, 60);
+
     const finalFeedback = {
       ...feedback,
       unit_id: unitId,
-      sugestao,
-      contato,
+      sugestao: cleanSugestao,
+      contato: cleanContato,
       timestamp: serverTimestamp(),
     };
 
@@ -341,53 +354,53 @@ function HomeContent() {
       console.error("Erro ao salvar avaliação: ", e);
     }
 
-    // Email dispatch para a academia correspondente
+    // Email dispatch para a academia correspondente (com HTML sanitizado)
     try {
       const aulaColetivaSec = feedback.aula_coletiva_participou
         ? `<hr style="border: none; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
            <h3 style="color: #27272a;">Aula Coletiva:</h3>
-           <p><strong>Professor/Aula:</strong> ${feedback.aula_coletiva_professor_nome} — ${feedback.aula_coletiva_professor_aula}</p>
+           <p><strong>Professor/Aula:</strong> ${escapeHtml(feedback.aula_coletiva_professor_nome)} — ${escapeHtml(feedback.aula_coletiva_professor_aula)}</p>
            <p><strong>Nota:</strong> ${feedback.aula_coletiva_nota > 0 ? `${feedback.aula_coletiva_nota} / 5 ⭐` : "Não avaliado"}</p>`
         : `<p><strong>Aula Coletiva:</strong> Não participou</p>`;
 
       const emailContent = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e4e4e7; border-radius: 16px; background-color: #fafafa; color: #18181b;">
           <h2 style="color: #ea580c; border-bottom: 2px solid #ea580c; padding-bottom: 8px;">Nova Avaliação de Satisfação - SkyFit</h2>
-          <p style="font-size: 13px; color: #71717a;">Unidade: <strong>${unitId}</strong></p>
+          <p style="font-size: 13px; color: #71717a;">Unidade: <strong>${escapeHtml(unitId)}</strong></p>
           
           <p style="font-size: 16px; margin: 16px 0;"><strong>Experiência Geral:</strong> 
             <span style="font-size: 18px; font-weight: bold; color: ${
               feedback.nota_geral === 'Ruim' ? '#ef4444' : 
               feedback.nota_geral === 'Regular' ? '#f97316' : 
               feedback.nota_geral === 'Bom' ? '#3b82f6' : '#10b981'
-            };">${feedback.nota_geral}</span>
+            };">${escapeHtml(feedback.nota_geral)}</span>
           </p>
           
-          <p><strong>Destacados pelo Cliente (Tags):</strong> ${feedback.tags.join(", ") || "Nenhum"}</p>
+          <p><strong>Destacados pelo Cliente (Tags):</strong> ${feedback.tags.map(t => escapeHtml(t)).join(", ") || "Nenhum"}</p>
           
           ${aulaColetivaSec}
           
           <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
           
           <h3 style="color: #27272a;">Avaliação da Recepção:</h3>
-          <p><strong>Atendente:</strong> ${feedback.recepcionista_nome}</p>
+          <p><strong>Atendente:</strong> ${escapeHtml(feedback.recepcionista_nome)}</p>
           <p><strong>Nota:</strong> ${feedback.recepcionista_nota > 0 ? `${feedback.recepcionista_nota} / 5 ⭐` : "Pulado (Não Avaliado)"}</p>
           
           <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
           
           <h3 style="color: #27272a;">Avaliação da Sala de Musculação:</h3>
-          <p><strong>Professor/Instrutor:</strong> ${feedback.professor_nome}</p>
+          <p><strong>Professor/Instrutor:</strong> ${escapeHtml(feedback.professor_nome)}</p>
           <p><strong>Nota:</strong> ${feedback.professor_nota > 0 ? `${feedback.professor_nota} / 5 ⭐` : "Pulado (Não Avaliado)"}</p>
           
           <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
           
           <p><strong>Sugestões/Críticas:</strong></p>
-          <div style="background-color: #ffffff; border: 1px solid #e4e4e7; padding: 12px; border-radius: 8px; font-style: italic; white-space: pre-wrap;">${sugestao || "Nenhuma sugestão enviada."}</div>
+          <div style="background-color: #ffffff; border: 1px solid #e4e4e7; padding: 12px; border-radius: 8px; font-style: italic; white-space: pre-wrap;">${escapeHtml(cleanSugestao) || "Nenhuma sugestão enviada."}</div>
           
-          <p style="margin-top: 16px;"><strong>Contato deixado para retorno:</strong> ${contato || "Nenhum contato deixado."}</p>
+          <p style="margin-top: 16px;"><strong>Contato deixado para retorno:</strong> ${escapeHtml(cleanContato) || "Nenhum contato deixado."}</p>
           
           <p style="font-size: 11px; color: #71717a; margin-top: 24px; text-align: center; border-top: 1px solid #e4e4e7; padding-top: 12px;">
-            Este e-mail foi gerado automaticamente pelo Totem da SkyFit (${unitId}). Sincronizado em: ${new Date().toLocaleString('pt-BR')}
+            Este e-mail foi gerado automaticamente pelo Totem da SkyFit (${escapeHtml(unitId)}). Sincronizado em: ${new Date().toLocaleString('pt-BR')}
           </p>
         </div>
       `;
@@ -401,8 +414,8 @@ function HomeContent() {
           html: emailContent,
         }
       });
-    } catch (e) {
-      console.error("Erro ao registrar disparo de e-mail:", e);
+    } catch {
+      // Disparo de e-mail pode ser protegido ou operado via Cloud Functions
     }
 
     setStep(11);
@@ -973,6 +986,7 @@ function StepSuggestions({ onSubmit, isProcessing, onBack }: { onSubmit: (s: str
             id="sugestao"
             placeholder="Digite aqui seu feedback ou sugestão..."
             value={sugestao}
+            maxLength={1000}
             onChange={(e) => {
               if (sugestao === "" && e.target.value.length > 0) playSound('click');
               setSugestao(e.target.value);
@@ -990,6 +1004,7 @@ function StepSuggestions({ onSubmit, isProcessing, onBack }: { onSubmit: (s: str
             type="text"
             placeholder="Ex: (14) 99999-9999"
             value={contato}
+            maxLength={40}
             onChange={(e) => {
               if (contato === "" && e.target.value.length > 0) playSound('click');
               setContato(e.target.value);
@@ -997,6 +1012,9 @@ function StepSuggestions({ onSubmit, isProcessing, onBack }: { onSubmit: (s: str
             className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl p-6 min-h-[60px] text-xl focus:outline-none focus:border-emerald-500 text-center placeholder-zinc-500"
             autoComplete="off"
           />
+          <p className="text-xs text-zinc-500 mt-1">
+            🔒 <strong>Privacidade (LGPD):</strong> Seu contato será utilizado exclusivamente pela gerência desta unidade para responder ao seu feedback.
+          </p>
         </div>
 
         <div className="flex gap-4 mt-8">
