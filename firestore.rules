@@ -1,32 +1,41 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Função auxiliar para validar se o usuário autenticado é o dono do registro
+    function isTenantOwner(unitId) {
+      return request.auth != null && request.auth.token.email.lower() == unitId.lower();
+    }
+
+    // 1. AVALIAÇÕES (Totem cria de forma pública com validação; Admin só lê/altera/deleta a sua própria unidade)
     match /avaliacoes/{avaliacao} {
-      // Admin pode ler tudo (ou filtrar por unit_id)
-      allow read: if request.auth != null;
-      // Totem (público) pode apenas criar avaliações
-      allow create: if true; 
-      // Apenas admin altera ou deleta
-      allow update, delete: if request.auth != null;
+      allow create: if request.resource.data.unit_id is string 
+                    && request.resource.data.unit_id.size() > 3
+                    && request.resource.data.nota_geral in ['Ruim', 'Regular', 'Bom', 'Excelente'];
+
+      allow read, update, delete: if isTenantOwner(resource.data.unit_id);
     }
-    
+
+    // 2. COLABORADORES (Totem lê; Admin autenticado gerencia apenas os da sua unidade com limite de tamanho)
     match /colaboradores/{colaborador} {
-      // Totem e clientes podem ler colaboradores
-      allow read: if true; 
-      // Apenas admin autenticado pode gerenciar a equipe
-      allow create, update, delete: if request.auth != null;
-    }
-
-    match /configuracoes/{config} {
-      // Totem pode ler configurações da sua unidade (email de alerta, etc.)
       allow read: if true;
-      // Apenas admin autenticado pode alterar as configurações
-      allow write: if request.auth != null;
+      allow create: if isTenantOwner(request.resource.data.unit_id)
+                    && (!('image' in request.resource.data) || request.resource.data.image.size() < 150000);
+      allow update: if isTenantOwner(resource.data.unit_id)
+                    && (!('unit_id' in request.resource.data) || isTenantOwner(request.resource.data.unit_id))
+                    && (!('image' in request.resource.data) || request.resource.data.image.size() < 150000);
+      allow delete: if isTenantOwner(resource.data.unit_id);
     }
 
+    // 3. CONFIGURAÇÕES DA UNIDADE (O ID do documento deve ser o e-mail/unit_id da unidade)
+    match /configuracoes/{unitId} {
+      allow read: if true;
+      allow write: if isTenantOwner(unitId);
+    }
+
+    // 4. E-MAILS (Bloqueado para o público geral contra Open Mail Relay)
     match /mail/{mail} {
-      // Disparo de notificação por e-mail pelo totem
-      allow create: if true;
+      allow read, write: if false; 
     }
   }
 }

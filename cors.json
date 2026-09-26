@@ -1,8 +1,12 @@
 [
   {
-    "origin": ["*"],
-    "method": ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
+    "origin": [
+      "https://pesquisa-academia-2dd97.web.app",
+      "https://pesquisa-academia-2dd97.firebaseapp.com",
+      "http://localhost:3000"
+    ],
+    "method": ["GET", "POST", "PUT", "OPTIONS"],
     "maxAgeSeconds": 3600,
-    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"]
+    "responseHeader": ["Content-Type", "Authorization"]
   }
 ]
