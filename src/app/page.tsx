@@ -578,13 +578,12 @@ function HomeContent() {
     return (
       <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
-        <div className="flex items-center justify-center gap-3 mb-4">
+        <div className="flex items-center justify-center gap-3 mb-12">
           <Music className="w-8 h-8 text-purple-400" />
           <h1 className="text-3xl md:text-5xl font-bold text-center tracking-tight">
             Você participou de alguma Aula Coletiva hoje?
           </h1>
         </div>
-        <p className="text-zinc-400 text-lg md:text-xl mb-12 text-center">Zumba, Ritmos, Spinning, Pilates...</p>
         <div className="flex flex-col sm:flex-row gap-6 w-full max-w-xl">
           <button
             disabled={isProcessing}
