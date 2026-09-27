@@ -20,6 +20,7 @@ service cloud.firestore {
                       'aula_coletiva_participou', 'aula_coletiva_professor_id', 'aula_coletiva_professor_nome', 'aula_coletiva_professor_aula', 'aula_coletiva_nota', 
                       'recepcionista_id', 'recepcionista_nome', 'recepcionista_nota', 
                       'professor_id', 'professor_nome', 'professor_nota', 
+                      'limpeza_id', 'limpeza_nome', 'limpeza_nota',
                       'sugestao', 'contato', 'timestamp'
                     ]);
 

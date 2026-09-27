@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc } from "firebase/firestore";
-import { User, Star, CheckCircle, Music, Settings, ShieldCheck, Lock } from "lucide-react";
+import { User, Star, CheckCircle, Music, Settings, ShieldCheck, Lock, Sparkles } from "lucide-react";
 
 // Tags dinâmicas por tipo de nota
 const negativeTags = ["Equipamentos", "Limpeza", "Atendimento", "Estrutura", "Banheiros", "Ar-condicionado", "Organização dos Pesos", "Som/Música"];
@@ -101,6 +101,10 @@ function HomeContent() {
     professor_id: "",
     professor_nome: "",
     professor_nota: 0,
+    // Limpeza
+    limpeza_id: "",
+    limpeza_nome: "",
+    limpeza_nota: 0,
     // Sugestão e Contato
     sugestao: "",
     contato: "",
@@ -248,7 +252,7 @@ function HomeContent() {
     }, 400);
   };
 
-  // Step 5: Tags
+  // Step 5: Tags & Limpeza Trigger
   const toggleTag = (tag: string) => {
     playSound('click');
     setFeedback((prev) => ({
@@ -259,14 +263,64 @@ function HomeContent() {
     }));
   };
 
+  const handleTagClick = (tag: string) => {
+    playSound('click');
+    if (tag === "Limpeza") {
+      setFeedback((prev) => ({
+        ...prev,
+        tags: prev.tags.includes("Limpeza") ? prev.tags : [...prev.tags, "Limpeza"],
+      }));
+      setIsProcessing(true);
+      setTimeout(() => {
+        setStep(12); // Seleciona equipe de limpeza
+        setIsProcessing(false);
+      }, 350);
+      return;
+    }
+    toggleTag(tag);
+  };
+
   const nextFromTags = () => {
     if (isProcessing) return;
     playSound('click');
     setIsProcessing(true);
     setTimeout(() => {
-      setStep(6); // Recepção
+      if (feedback.tags.includes("Limpeza") && !feedback.limpeza_id) {
+        setStep(12); // Pede avaliação de limpeza caso a tag esteja marcada
+      } else {
+        setStep(6); // Recepção
+      }
       setIsProcessing(false);
     }, 300);
+  };
+
+  // Step 12: Selecionar Colaborador da Limpeza
+  const handleSelectLimpeza = (id: string, name: string) => {
+    if (isProcessing) return;
+    playSound('click');
+    setIsProcessing(true);
+    setFeedback(prev => ({ ...prev, limpeza_id: id, limpeza_nome: name }));
+    setTimeout(() => {
+      if (id === "Nenhum" || id === "Ninguem") {
+        setFeedback(prev => ({ ...prev, limpeza_nota: id === "Ninguem" ? 1 : 0 }));
+        setStep(6); // Segue direto para a Recepção
+      } else {
+        setStep(13); // Avalia colaborador da limpeza
+      }
+      setIsProcessing(false);
+    }, 400);
+  };
+
+  // Step 13: Avaliar Colaborador da Limpeza (estrelas)
+  const handleRateLimpeza = (rating: number) => {
+    if (isProcessing) return;
+    playSound('click');
+    setIsProcessing(true);
+    setFeedback(prev => ({ ...prev, limpeza_nota: rating }));
+    setTimeout(() => {
+      setStep(6); // Segue diretamente para Recepção (conforme solicitado)
+      setIsProcessing(false);
+    }, 400);
   };
 
   // Step 6: Recepção
@@ -369,6 +423,13 @@ function escapeHtml(str: string): string {
            <p><strong>Nota:</strong> ${feedback.aula_coletiva_nota > 0 ? `${feedback.aula_coletiva_nota} / 5 ⭐` : "Não avaliado"}</p>`
         : `<p><strong>Aula Coletiva:</strong> Não participou</p>`;
 
+      const limpezaSec = feedback.limpeza_nome && feedback.limpeza_nome !== "Nenhum"
+        ? `<hr style="border: none; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
+           <h3 style="color: #27272a;">Avaliação da Limpeza:</h3>
+           <p><strong>Colaborador:</strong> ${escapeHtml(feedback.limpeza_nome)}</p>
+           <p><strong>Nota:</strong> ${feedback.limpeza_nota > 0 ? `${feedback.limpeza_nota} / 5 ⭐` : "Não avaliado"}</p>`
+        : '';
+
       const emailContent = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e4e4e7; border-radius: 16px; background-color: #fafafa; color: #18181b;">
           <h2 style="color: #ea580c; border-bottom: 2px solid #ea580c; padding-bottom: 8px;">Nova Avaliação de Satisfação - SkyFit</h2>
@@ -385,6 +446,8 @@ function escapeHtml(str: string): string {
           <p><strong>Destacados pelo Cliente (Tags):</strong> ${feedback.tags.map(t => escapeHtml(t)).join(", ") || "Nenhum"}</p>
           
           ${aulaColetivaSec}
+
+          ${limpezaSec}
           
           <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
           
@@ -448,6 +511,9 @@ function escapeHtml(str: string): string {
           professor_id: "",
           professor_nome: "",
           professor_nota: 0,
+          limpeza_id: "",
+          limpeza_nome: "",
+          limpeza_nota: 0,
           sugestao: "",
           contato: "",
         });
@@ -540,6 +606,7 @@ function escapeHtml(str: string): string {
   const receptionists = staffList.filter((s) => s.setor === "recepcao");
   const professors = staffList.filter((s) => s.setor === "musculacao");
   const coletivaProfessors = staffList.filter((s) => s.setor === "coletiva");
+  const cleaningStaff = staffList.filter((s) => s.setor === "limpeza");
 
   // Indicador sutil da unidade ativa no rodapé protegido por PIN
   const unitBadge = (
@@ -794,14 +861,21 @@ function escapeHtml(str: string): string {
             return (
               <button
                 key={tag}
-                onClick={() => toggleTag(tag)}
+                onClick={() => handleTagClick(tag)}
                 className={`py-7 px-4 min-h-[90px] rounded-2xl text-xl font-semibold transition-all transform active:scale-95 border-2 ${
                   isSelected
                     ? "bg-zinc-100 text-zinc-900 border-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
                     : "bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-500"
                 }`}
               >
-                {tag}
+                {tag === "Limpeza" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Sparkles className={`w-6 h-6 ${isSelected ? "text-teal-600" : "text-teal-400"}`} />
+                    {tag}
+                  </span>
+                ) : (
+                  tag
+                )}
               </button>
             );
           })}
@@ -879,13 +953,28 @@ function escapeHtml(str: string): string {
           </button>
         </div>
 
-        {/* Pular discreto */}
-        <button
-          onClick={() => handleSelectRecepcionista("Nenhum", "Nenhum")}
-          className="mt-4 text-zinc-600 hover:text-zinc-400 text-base underline underline-offset-4 transition-colors"
-        >
-          Pular esta etapa
-        </button>
+        <div className="flex flex-col items-center gap-4 mt-6">
+          <button
+            onClick={() => handleSelectRecepcionista("Nenhum", "Nenhum")}
+            className="text-zinc-600 hover:text-zinc-400 text-base underline underline-offset-4 transition-colors"
+          >
+            Pular esta etapa
+          </button>
+          <button
+            onClick={() => {
+              if (feedback.limpeza_id && feedback.limpeza_id !== "Nenhum") {
+                setStep(13);
+              } else if (feedback.tags.includes("Limpeza")) {
+                setStep(12);
+              } else {
+                setStep(5);
+              }
+            }}
+            className="px-8 py-3.5 rounded-full text-base font-bold bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-all text-zinc-400"
+          >
+            Voltar
+          </button>
+        </div>
         {unitBadge}
       </div>
     );
@@ -1030,6 +1119,118 @@ function escapeHtml(str: string): string {
         <p className="text-2xl text-emerald-400 font-semibold text-center max-w-2xl">
           Sua avaliação foi registrada e enviada para a gerência da unidade {unitId}. Bom treino!
         </p>
+      </div>
+    );
+  }
+
+  // Step 12: Selecionar Colaborador da Limpeza
+  if (step === 12) {
+    return (
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+        <SkyFitLogo />
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <Sparkles className="w-8 h-8 text-teal-400" />
+          <h1 className="text-3xl md:text-5xl font-bold text-center tracking-tight">
+            Quem cuidou da limpeza hoje?
+          </h1>
+        </div>
+        <p className="text-zinc-400 text-lg md:text-xl mb-8 text-center">
+          Selecione o colaborador da equipe de limpeza
+        </p>
+
+        <div className="flex overflow-x-auto snap-x gap-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
+          {cleaningStaff.map((staff) => (
+            <button
+              key={staff.id}
+              disabled={isProcessing}
+              onClick={() => handleSelectLimpeza(staff.id, staff.nome)}
+              className="flex-shrink-0 snap-center flex flex-col items-center p-6 min-h-[60px] min-w-[200px] md:min-w-[240px] bg-zinc-900 border border-zinc-800 rounded-3xl hover:bg-teal-950/30 hover:border-teal-500/50 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50"
+            >
+              {staff.image ? (
+                <img
+                  src={staff.image}
+                  alt={staff.nome}
+                  className="w-32 h-32 md:w-40 md:h-40 rounded-full mb-6 object-cover border-4 border-teal-500/30 pointer-events-none"
+                />
+              ) : (
+                <div className="w-32 h-32 md:w-40 md:h-40 rounded-full mb-6 bg-teal-900/30 flex items-center justify-center border-4 border-teal-500/30 pointer-events-none">
+                  <Sparkles className="w-16 h-16 text-teal-400" />
+                </div>
+              )}
+              <h2 className="text-2xl font-bold">{staff.nome}</h2>
+              <p className="text-teal-400 text-lg font-medium">{staff.cargo || "Limpeza"}</p>
+            </button>
+          ))}
+
+          {cleaningStaff.length === 0 && (
+            <div className="flex-shrink-0 flex flex-col items-center justify-center p-8 min-w-[240px] bg-zinc-900 border border-dashed border-zinc-800 rounded-3xl text-zinc-500 text-center">
+              <Sparkles className="w-12 h-12 text-zinc-600 mb-3" />
+              <p className="font-semibold text-zinc-400">Nenhum colaborador de limpeza cadastrado</p>
+              <p className="text-xs text-zinc-600 mt-1">Cadastre sua equipe no Painel Admin</p>
+            </div>
+          )}
+
+          {/* Não vi ninguém da limpeza */}
+          <button
+            onClick={() => handleSelectLimpeza("Ninguem", "Nenhum colaborador visto")}
+            className="flex-shrink-0 snap-center flex flex-col items-center justify-center p-6 min-w-[200px] md:min-w-[240px] bg-zinc-900/80 border-2 border-zinc-800 rounded-3xl hover:bg-zinc-800 hover:border-zinc-700 transition-all transform hover:scale-105 active:scale-95"
+          >
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full mb-4 bg-zinc-800 flex items-center justify-center border-4 border-zinc-700 pointer-events-none">
+              <span className="text-5xl select-none">🧹</span>
+            </div>
+            <h2 className="text-xl font-bold text-zinc-300 text-center">Não vi a limpeza</h2>
+            <p className="text-zinc-500 text-sm text-center mt-1">Nenhum colaborador visto</p>
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center gap-4 mt-6">
+          <button
+            onClick={() => handleSelectLimpeza("Nenhum", "Nenhum")}
+            className="text-zinc-500 hover:text-zinc-300 text-base underline underline-offset-4 transition-colors"
+          >
+            Pular esta etapa
+          </button>
+          <button
+            onClick={() => setStep(5)}
+            className="px-8 py-3.5 rounded-full text-base font-bold bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-all text-zinc-400"
+          >
+            Voltar
+          </button>
+        </div>
+        {unitBadge}
+      </div>
+    );
+  }
+
+  // Step 13: Avaliação de Limpeza (estrelas)
+  if (step === 13) {
+    return (
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
+        <SkyFitLogo />
+        <div className="flex items-center gap-2 mb-3 text-center">
+          <Sparkles className="w-7 h-7 text-teal-400 flex-shrink-0" />
+          <h1 className="text-2xl md:text-5xl font-bold mb-3 text-center tracking-tight">
+            Avalie o trabalho de {feedback.limpeza_nome}:
+          </h1>
+        </div>
+        <p className="text-zinc-400 text-xl mb-10">Escolha uma nota de 1 a 5 estrelas</p>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(20,184,166,0.08)]">
+          <RatingGroup
+            value={feedback.limpeza_nota}
+            onChange={handleRateLimpeza}
+            color="text-teal-400"
+            glowColor="rgba(20,184,166,0.35)"
+          />
+        </div>
+
+        <button
+          onClick={() => setStep(12)}
+          className="mt-12 px-10 py-6 min-h-[60px] rounded-full text-xl font-bold bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-all text-zinc-400"
+        >
+          Voltar
+        </button>
+        {unitBadge}
       </div>
     );
   }

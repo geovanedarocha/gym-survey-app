@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { db, auth } from "@/lib/firebase";
 import { collection, query, onSnapshot, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { Activity, MessageCircle, BarChart3, Users, Star, LogOut, Check, Phone, ExternalLink, Copy, Trash2, CheckCircle2 } from "lucide-react";
+import { Activity, MessageCircle, BarChart3, Users, Star, LogOut, Check, Phone, ExternalLink, Copy, Trash2, CheckCircle2, Sparkles } from "lucide-react";
 
 function AdminDashboardInner() {
   const router = useRouter();
@@ -137,6 +137,26 @@ function AdminDashboardInner() {
   })).sort((a, b) => b.media - a.media || b.votos - a.votos);
   const topProf = topProfList[0];
 
+  // Limpeza TOP
+  const limpezaAvg: Record<string, { totalNotes: number, sumNotes: number, nome: string }> = {};
+  data.forEach(d => {
+    if (d.limpeza_id && d.limpeza_id !== "Nenhum" && d.limpeza_nota > 0) {
+      const id = d.limpeza_id;
+      const nota = d.limpeza_nota;
+      const name = d.limpeza_nome || "Desconhecido";
+      if (!limpezaAvg[id]) limpezaAvg[id] = { totalNotes: 0, sumNotes: 0, nome: name };
+      limpezaAvg[id].totalNotes += 1;
+      limpezaAvg[id].sumNotes += nota;
+    }
+  });
+  const topLimpezaList = Object.keys(limpezaAvg).map(id => ({
+    id,
+    nome: limpezaAvg[id].nome,
+    media: limpezaAvg[id].sumNotes / limpezaAvg[id].totalNotes,
+    votos: limpezaAvg[id].totalNotes
+  })).sort((a, b) => b.media - a.media || b.votos - a.votos);
+  const topLimpeza = topLimpezaList[0];
+
   const totemUrl = typeof window !== 'undefined' && unitId ? `${window.location.origin}/?unit=${encodeURIComponent(unitId)}` : '';
 
   const handleCopyTotemLink = async () => {
@@ -240,7 +260,7 @@ function AdminDashboardInner() {
       </header>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10 w-full max-w-6xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10 w-full max-w-6xl">
         <div className="bg-zinc-900 border border-[#10B981]/50 rounded-2xl p-6 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
           <p className="text-zinc-400 flex items-center gap-2 mb-2"><BarChart3 size={18}/> Índice de Satisfação</p>
           <p className="text-5xl font-bold text-[#10B981]">{total > 1 ? taxaSatisfacao : "--"}%</p>
@@ -256,6 +276,10 @@ function AdminDashboardInner() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
           <p className="text-zinc-400 flex items-center gap-2 mb-2"><Star size={18}/> Professor TOP</p>
           <p className="text-2xl font-bold text-blue-400 truncate">{topProf ? `${topProf.nome} (${topProf.media.toFixed(1)}⭐)` : "--"}</p>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+          <p className="text-zinc-400 flex items-center gap-2 mb-2"><Sparkles size={18} className="text-teal-400"/> Limpeza TOP</p>
+          <p className="text-2xl font-bold text-teal-400 truncate">{topLimpeza ? `${topLimpeza.nome} (${topLimpeza.media.toFixed(1)}⭐)` : "--"}</p>
         </div>
       </div>
 
@@ -291,10 +315,18 @@ function AdminDashboardInner() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-zinc-300">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-zinc-300">
                     <div>
                       <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Destaques (Tags)</p>
                       <p className="mt-1 font-semibold text-zinc-200">{item.tags && item.tags.length > 0 ? item.tags.join(", ") : "--"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Limpeza</p>
+                      <p className="mt-1 font-semibold text-teal-400">
+                        {item.limpeza_nome && item.limpeza_nome !== "Nenhum" 
+                          ? `${item.limpeza_nome} (${item.limpeza_nota || 0}/5 ⭐)` 
+                          : "Não avaliado"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Recepção</p>
