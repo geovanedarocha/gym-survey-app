@@ -3,9 +3,9 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { db, auth } from "@/lib/firebase";
-import { collection, query, onSnapshot, where } from "firebase/firestore";
+import { collection, query, onSnapshot, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { Activity, MessageCircle, BarChart3, Users, Star, LogOut, Check, Phone, ExternalLink, Copy } from "lucide-react";
+import { Activity, MessageCircle, BarChart3, Users, Star, LogOut, Check, Phone, ExternalLink, Copy, Trash2, CheckCircle2 } from "lucide-react";
 
 function AdminDashboardInner() {
   const router = useRouter();
@@ -150,6 +150,28 @@ function AdminDashboardInner() {
     }
   };
 
+  const handleAnonymizeContact = async (id: string) => {
+    if (!confirm("Deseja marcar este atendimento como concluído e remover o número de telefone (em conformidade com a LGPD)?")) return;
+    try {
+      await updateDoc(doc(db, "avaliacoes", id), {
+        contato: "[Atendido - Contato Removido]",
+      });
+    } catch (err) {
+      console.error("Erro ao anonimizar contato:", err);
+      alert("Erro ao atualizar o registro.");
+    }
+  };
+
+  const handleDeleteEvaluation = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir permanentemente este feedback de avaliação (Direito ao Esquecimento LGPD)?")) return;
+    try {
+      await deleteDoc(doc(db, "avaliacoes", id));
+    } catch (err) {
+      console.error("Erro ao excluir avaliação:", err);
+      alert("Erro ao excluir avaliação.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8 font-sans overflow-auto">
       {/* SkyFit Header Logo */}
@@ -251,13 +273,22 @@ function AdminDashboardInner() {
                 <div key={item.id} className="bg-zinc-900 border border-zinc-850 rounded-2xl p-6 flex flex-col gap-4 text-base font-sans">
                   <div className="flex flex-wrap justify-between items-center border-b border-zinc-800 pb-3 gap-2">
                     <span className="text-zinc-500 font-mono text-sm">[{item.dateLabel} {item.timeLabel}]</span>
-                    <span className={`font-bold px-3 py-1 rounded-full text-xs ${
-                      item.nota_geral === 'Ruim' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
-                      item.nota_geral === 'Regular' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
-                      item.nota_geral === 'Bom' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-[#10B981] border border-[#10B981]/20'
-                    }`}>
-                      Experiência: {item.nota_geral || 'N/A'}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className={`font-bold px-3 py-1 rounded-full text-xs ${
+                        item.nota_geral === 'Ruim' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                        item.nota_geral === 'Regular' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                        item.nota_geral === 'Bom' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-[#10B981] border border-[#10B981]/20'
+                      }`}>
+                        Experiência: {item.nota_geral || 'N/A'}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteEvaluation(item.id)}
+                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Excluir Avaliação (LGPD - Direito ao Esquecimento)"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-zinc-300">
@@ -294,18 +325,29 @@ function AdminDashboardInner() {
                     <div className="flex justify-between items-center bg-zinc-950/40 p-3 rounded-xl border border-zinc-850 flex-wrap gap-2">
                       <span className="text-zinc-400 flex items-center gap-2 text-sm">
                         <Phone size={14} className="text-emerald-500 animate-pulse" />
-                        Retorno solicitado para: <strong className="text-white font-mono">{item.contato}</strong>
+                        Retorno solicitado para: <strong className={`font-mono ${item.contato && item.contato.includes("[Atendido") ? 'text-zinc-500 italic' : 'text-white'}`}>{item.contato}</strong>
                       </span>
-                      {hasPhone && (
-                        <a 
-                          href={`https://api.whatsapp.com/send?phone=55${onlyNumbers}&text=Ol%C3%A1!%20Sou%20o%20gestor%20da%20academia%20SkyFit.%20Recebemos%20seu%20feedback%20no%20totem%20e%20gostaria%20de%20conversar%20mais%20sobre%20sua%20sugest%C3%A3o.`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="bg-[#10B981] text-zinc-950 px-4 py-2 text-xs font-bold rounded-lg hover:bg-emerald-400 transition flex items-center gap-1.5"
-                        >
-                          <MessageCircle size={14} /> Acionar no Zap
-                        </a>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {item.contato && !item.contato.includes("[Atendido") && (
+                          <button
+                            onClick={() => handleAnonymizeContact(item.id)}
+                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 px-3 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1.5"
+                            title="Marcar como atendido e remover telefone pessoal (LGPD)"
+                          >
+                            <CheckCircle2 size={13} className="text-emerald-400" /> Marcar Atendido
+                          </button>
+                        )}
+                        {hasPhone && !item.contato?.includes("[Atendido") && (
+                          <a 
+                            href={`https://api.whatsapp.com/send?phone=55${onlyNumbers}&text=Ol%C3%A1!%20Sou%20o%20gestor%20da%20academia%20SkyFit.%20Recebemos%20seu%20feedback%20no%20totem%20e%20gostaria%20de%20conversar%20mais%20sobre%20sua%20sugest%C3%A3o.`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="bg-[#10B981] text-zinc-950 px-4 py-2 text-xs font-bold rounded-lg hover:bg-emerald-400 transition flex items-center gap-1.5"
+                          >
+                            <MessageCircle size={14} /> Acionar no Zap
+                          </a>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

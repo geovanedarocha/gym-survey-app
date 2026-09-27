@@ -36,7 +36,8 @@ self.addEventListener('fetch', (event) => {
     url.origin.includes('firestore.googleapis.com') ||
     url.origin.includes('firebaseapp.com') ||
     url.origin.includes('googleapis.com') ||
-    url.pathname.startsWith('/__/')
+    url.pathname.startsWith('/__/') ||
+    url.pathname.startsWith('/admin')
   ) {
     return;
   }

@@ -7,16 +7,26 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email.lower() == unitId.lower();
     }
 
-    // 1. AVALIAÇÕES (Totem cria de forma pública com validação; Admin só lê/altera/deleta a sua própria unidade)
+    // 1. AVALIAÇÕES (Totem cria de forma pública com validação estrita de schema; Admin só lê/altera/deleta a sua unidade)
     match /avaliacoes/{avaliacao} {
       allow create: if request.resource.data.unit_id is string 
-                    && request.resource.data.unit_id.size() > 3
-                    && request.resource.data.nota_geral in ['Ruim', 'Regular', 'Bom', 'Excelente'];
+                    && request.resource.data.unit_id.size() >= 3
+                    && request.resource.data.unit_id.size() <= 100
+                    && request.resource.data.nota_geral in ['Ruim', 'Regular', 'Bom', 'Excelente']
+                    && (!('sugestao' in request.resource.data) || (request.resource.data.sugestao is string && request.resource.data.sugestao.size() <= 1000))
+                    && (!('contato' in request.resource.data) || (request.resource.data.contato is string && request.resource.data.contato.size() <= 100))
+                    && request.resource.data.keys().hasOnly([
+                      'unit_id', 'nota_geral', 'tags', 
+                      'aula_coletiva_participou', 'aula_coletiva_professor_id', 'aula_coletiva_professor_nome', 'aula_coletiva_professor_aula', 'aula_coletiva_nota', 
+                      'recepcionista_id', 'recepcionista_nome', 'recepcionista_nota', 
+                      'professor_id', 'professor_nome', 'professor_nota', 
+                      'sugestao', 'contato', 'timestamp'
+                    ]);
 
       allow read, update, delete: if isTenantOwner(resource.data.unit_id);
     }
 
-    // 2. COLABORADORES (Totem lê; Admin autenticado gerencia apenas os da sua unidade com limite de tamanho)
+    // 2. COLABORADORES - Coleção Raiz (Legado com backward-compatibility e limites de tamanho)
     match /colaboradores/{colaborador} {
       allow read: if true;
       allow create: if isTenantOwner(request.resource.data.unit_id)
@@ -25,6 +35,14 @@ service cloud.firestore {
                     && (!('unit_id' in request.resource.data) || isTenantOwner(request.resource.data.unit_id))
                     && (!('image' in request.resource.data) || request.resource.data.image.size() < 150000);
       allow delete: if isTenantOwner(resource.data.unit_id);
+    }
+
+    // 2.1. COLABORADORES - Subcoleção por Inquilino (Arquitetura SaaS Recomendada)
+    match /unidades/{unitId}/colaboradores/{colaborador} {
+      allow read: if true;
+      allow create, update: if isTenantOwner(unitId)
+                            && (!('image' in request.resource.data) || request.resource.data.image.size() < 150000);
+      allow delete: if isTenantOwner(unitId);
     }
 
     // 3. CONFIGURAÇÕES DA UNIDADE (O ID do documento deve ser o e-mail/unit_id da unidade)

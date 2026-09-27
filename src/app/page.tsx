@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc } from "firebase/firestore";
-import { User, Star, CheckCircle, Music, Settings, ShieldCheck } from "lucide-react";
+import { User, Star, CheckCircle, Music, Settings, ShieldCheck, Lock } from "lucide-react";
 
 // Tags dinâmicas por tipo de nota
 const negativeTags = ["Equipamentos", "Limpeza", "Atendimento", "Estrutura", "Banheiros", "Ar-condicionado", "Organização dos Pesos", "Som/Música"];
@@ -75,6 +75,10 @@ function HomeContent() {
   const [unitLoaded, setUnitLoaded] = useState<boolean>(false);
   const [isConfiguringUnit, setIsConfiguringUnit] = useState<boolean>(false);
   const [tempUnitInput, setTempUnitInput] = useState<string>("");
+  const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
+  const [pinInput, setPinInput] = useState<string>("");
+  const [pinError, setPinError] = useState<string>("");
+  const [adminPin, setAdminPin] = useState<string>("1234");
 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -169,7 +173,9 @@ function HomeContent() {
         const data = docSnap.data();
         if (data.email_gestao) {
           setAcademiaEmail(data.email_gestao);
-          return;
+        }
+        if (data.pin && typeof data.pin === "string" && data.pin.trim().length === 4) {
+          setAdminPin(data.pin.trim());
         }
       }
       setAcademiaEmail(unitId.includes("@") ? unitId : "skyfitb.gestao@gmail.com");
@@ -535,22 +541,90 @@ function escapeHtml(str: string): string {
   const professors = staffList.filter((s) => s.setor === "musculacao");
   const coletivaProfessors = staffList.filter((s) => s.setor === "coletiva");
 
-  // Indicador sutil da unidade ativa no rodapé
+  // Indicador sutil da unidade ativa no rodapé protegido por PIN
   const unitBadge = (
-    <div className="fixed bottom-3 right-3 flex items-center gap-2 bg-zinc-900/80 backdrop-blur border border-zinc-800 px-3 py-1.5 rounded-full text-xs text-zinc-400 select-none z-10 shadow-lg">
-      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-      <span className="font-mono text-zinc-300">{unitId}</span>
-      <button
-        onClick={() => {
-          setTempUnitInput(unitId);
-          setIsConfiguringUnit(true);
-        }}
-        className="text-zinc-500 hover:text-zinc-200 ml-1 transition-colors p-0.5"
-        title="Alterar unidade deste totem"
-      >
-        <Settings size={13} />
-      </button>
-    </div>
+    <>
+      <div className="fixed bottom-3 right-3 flex items-center gap-2 bg-zinc-900/80 backdrop-blur border border-zinc-800 px-3 py-1.5 rounded-full text-xs text-zinc-400 select-none z-10 shadow-lg">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="font-mono text-zinc-300">{unitId}</span>
+        <button
+          onClick={() => {
+            setPinInput("");
+            setPinError("");
+            setIsPinModalOpen(true);
+          }}
+          className="text-zinc-500 hover:text-zinc-200 ml-1 transition-colors p-0.5"
+          title="Alterar unidade deste totem (Requer PIN de Gestor)"
+        >
+          <Settings size={13} />
+        </button>
+      </div>
+
+      {/* Modal de PIN de Segurança do Totem */}
+      {isPinModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-750 rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl text-center">
+            <div className="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+              <Lock size={26} />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-1">Acesso do Gestor</h3>
+            <p className="text-zinc-400 text-xs mb-6">
+              Digite o PIN de 4 dígitos para gerenciar ou alterar a unidade vinculada a este totem.
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (pinInput.trim() === adminPin.trim()) {
+                  setIsPinModalOpen(false);
+                  setTempUnitInput(unitId);
+                  setIsConfiguringUnit(true);
+                } else {
+                  setPinError("PIN incorreto. Tente novamente.");
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={pinInput}
+                  onChange={(e) => {
+                    setPinError("");
+                    setPinInput(e.target.value.replace(/\D/g, ""));
+                  }}
+                  placeholder="••••"
+                  className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-2xl py-3.5 text-center text-3xl font-mono tracking-[0.5em] text-white focus:outline-none focus:border-emerald-500"
+                  autoFocus
+                  required
+                />
+                {pinError && <p className="text-red-400 text-xs mt-2 font-medium">{pinError}</p>}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPinModalOpen(false)}
+                  className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-sm transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={pinInput.length < 4}
+                  className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-[0_0_15px_rgba(16,185,129,0.25)]"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 
   // ──────────────────────────────────────────────
