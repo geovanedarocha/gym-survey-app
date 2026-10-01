@@ -11,8 +11,20 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
 
-  /* Se o seu app estiver em uma subpasta, você configuraria o baseContext aqui, 
-     mas para a raiz do domínio não precisa de mais nada. */
+  /* Garante que bibliotecas com sintaxe moderna sejam transpiladas conforme o browserslist */
+  transpilePackages: [
+    "firebase",
+    "@firebase/app",
+    "@firebase/firestore",
+    "@firebase/auth",
+    "@firebase/storage",
+    "@firebase/util",
+    "@firebase/component",
+    "@firebase/logger",
+    "@firebase/webchannel-wrapper",
+    "lucide-react",
+    "recharts",
+  ],
 };
 
 export default nextConfig;

@@ -1,5 +1,12 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, Firestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { 
+  getFirestore, 
+  Firestore, 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager,
+  memoryLocalCache 
+} from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { getAuth, Auth } from "firebase/auth";
 
@@ -18,12 +25,27 @@ const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 // Tipagem explícita para o TypeScript não reclamar no Build
 let db: Firestore;
 try {
-  db = initializeFirestore(app, {
-    localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
-  });
+  // Verifica suporte a BroadcastChannel e IndexedDB antes de tentar multi-tab persistence
+  const hasIndexedDB = typeof window !== "undefined" && "indexedDB" in window;
+  const hasBroadcastChannel = typeof window !== "undefined" && "BroadcastChannel" in window;
+
+  if (hasIndexedDB && hasBroadcastChannel) {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+  } else {
+    // Fallback para dispositivos legados (iOS 10 Safari) para evitar falhas do WebKit no IndexedDB
+    db = initializeFirestore(app, {
+      localCache: memoryLocalCache()
+    });
+  }
 } catch (e) {
   // Fallback seguro caso o Firestore já tenha sido inicializado no Hot Reload
-  db = getFirestore(app);
+  try {
+    db = getFirestore(app);
+  } catch {
+    db = initializeFirestore(app, {});
+  }
 }
 
 const storage: FirebaseStorage = getStorage(app);
