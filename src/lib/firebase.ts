@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+﻿import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
   getFirestore, 
   Firestore, 
@@ -19,32 +19,42 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Inicializa o Firebase garantindo que não crie múltiplas instâncias
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Tipagem explícita para o TypeScript não reclamar no Build
 let db: Firestore;
-try {
-  // Verifica suporte a BroadcastChannel e IndexedDB antes de tentar multi-tab persistence
-  const hasIndexedDB = typeof window !== "undefined" && "indexedDB" in window;
-  const hasBroadcastChannel = typeof window !== "undefined" && "BroadcastChannel" in window;
 
-  if (hasIndexedDB && hasBroadcastChannel) {
-    db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
-  } else {
-    // Fallback para dispositivos legados (iOS 10 Safari) para evitar falhas do WebKit no IndexedDB
-    db = initializeFirestore(app, {
-      localCache: memoryLocalCache()
-    });
-  }
-} catch (e) {
-  // Fallback seguro caso o Firestore já tenha sido inicializado no Hot Reload
+if (typeof window !== "undefined") {
   try {
-    db = getFirestore(app);
-  } catch {
+    const isIOS10 = /OS 10_/i.test(window.navigator.userAgent);
+    const isIOS11 = /OS 11_/i.test(window.navigator.userAgent);
+    
+    const hasBroadcastChannel = typeof (window as any).BroadcastChannel !== "undefined" 
+        && typeof (window as any).BroadcastChannel.prototype.postMessage === "function"
+        && (window as any).BroadcastChannel.toString().indexOf("native code") !== -1;
+
+    if (!isIOS10 && !isIOS11 && hasBroadcastChannel) {
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      });
+    } else {
+      db = initializeFirestore(app, {
+        localCache: memoryLocalCache()
+      });
+    }
+  } catch (e) {
+    try {
+      db = getFirestore(app);
+    } catch {
+      db = initializeFirestore(app, {
+        localCache: memoryLocalCache()
+      });
+    }
+  }
+} else {
+  try {
     db = initializeFirestore(app, {});
+  } catch {
+    db = getFirestore(app);
   }
 }
 

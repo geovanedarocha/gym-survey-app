@@ -526,7 +526,7 @@ function escapeHtml(str: string): string {
   if (!unitLoaded) {
     return (
       <div className="h-screen bg-zinc-950 flex justify-center items-center text-white">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center space-y-3">
           <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
           <p className="text-zinc-500 text-sm">Carregando totem...</p>
         </div>
@@ -591,7 +591,7 @@ function escapeHtml(str: string): string {
               </button>
             )}
           </form>
-          <div className="mt-6 pt-4 border-t border-zinc-800 text-xs text-zinc-500 flex flex-col gap-2">
+          <div className="mt-6 pt-4 border-t border-zinc-800 text-xs text-zinc-500 flex flex-col space-y-2">
             <p>Você também pode abrir o totem pelo link no Dashboard Executivo.</p>
             <a href="/admin/login" className="text-emerald-400 hover:underline">
               Acessar Painel Administrativo →
@@ -611,7 +611,7 @@ function escapeHtml(str: string): string {
   // Indicador sutil da unidade ativa no rodapé protegido por PIN
   const unitBadge = (
     <>
-      <div className="fixed bottom-3 right-3 flex items-center gap-2 bg-zinc-900/80 backdrop-blur border border-zinc-800 px-3 py-1.5 rounded-full text-xs text-zinc-400 select-none z-10 shadow-lg">
+      <div className="fixed bottom-3 right-3 flex items-center space-x-2 bg-zinc-900/80 backdrop-blur border border-zinc-800 px-3 py-1.5 rounded-full text-xs text-zinc-400 select-none z-10 shadow-lg">
         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
         <span className="font-mono text-zinc-300">{unitId}</span>
         <button
@@ -671,7 +671,7 @@ function escapeHtml(str: string): string {
                 {pinError && <p className="text-red-400 text-xs mt-2 font-medium">{pinError}</p>}
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex space-x-3">
                 <button
                   type="button"
                   onClick={() => setIsPinModalOpen(false)}
@@ -704,22 +704,23 @@ function escapeHtml(str: string): string {
       <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
         <h1 className="text-3xl md:text-5xl font-bold mb-8 md:mb-12 text-center tracking-tight">Como foi sua experiência hoje?</h1>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 w-full max-w-5xl">
+        <div className="flex flex-wrap justify-center w-full max-w-5xl mx-auto -mx-2 sm:-mx-3">
           {[
             { label: "Ruim", emoji: "😡", color: "bg-red-500/20 hover:bg-red-500/40 text-red-500 border-red-500/50" },
             { label: "Regular", emoji: "😐", color: "bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 border-orange-500/50" },
             { label: "Bom", emoji: "🙂", color: "bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 border-blue-500/50" },
-            { label: "Excelente", emoji: "🤩", color: "bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 border-emerald-500/50" },
+            { label: "Excelente", emoji: "😍", color: "bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 border-emerald-500/50" },
           ].map((item) => (
-            <button
-              key={item.label}
-              disabled={isProcessing}
-              onClick={() => handleExperience(item.label)}
-              className={`flex flex-col items-center justify-center p-10 md:p-14 min-h-[60px] rounded-3xl border-2 transition-all transform hover:scale-105 active:scale-95 ${item.color} disabled:opacity-50`}
-            >
-              <span className="text-6xl md:text-8xl mb-6">{item.emoji}</span>
-              <span className="text-xl md:text-3xl font-semibold">{item.label}</span>
-            </button>
+            <div key={item.label} className="w-1/2 sm:w-1/4 p-2 sm:p-3 flex">
+              <button
+                disabled={isProcessing}
+                onClick={() => handleExperience(item.label)}
+                className={`flex-1 w-full flex flex-col items-center justify-center p-8 md:p-14 min-h-[60px] rounded-3xl border-2 transition-all transform hover:scale-105 active:scale-95 ${item.color} disabled:opacity-50`}
+              >
+                <span className="text-6xl md:text-8xl mb-6">{item.emoji}</span>
+                <span className="text-xl md:text-3xl font-semibold">{item.label}</span>
+              </button>
+            </div>
           ))}
         </div>
         {unitBadge}
@@ -732,17 +733,17 @@ function escapeHtml(str: string): string {
     return (
       <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
-        <div className="flex items-center justify-center gap-3 mb-12">
+        <div className="flex items-center justify-center space-x-3 mb-12">
           <Music className="w-8 h-8 text-purple-400" />
           <h1 className="text-3xl md:text-5xl font-bold text-center tracking-tight">
             Você participou de alguma Aula Coletiva hoje?
           </h1>
         </div>
-        <div className="flex flex-col sm:flex-row gap-6 w-full max-w-xl">
+        <div className="flex flex-col sm:flex-row space-y-6 sm:space-y-0 sm:space-x-6 w-full max-w-xl">
           <button
             disabled={isProcessing}
             onClick={() => handleAulaColetiva(false)}
-            className="flex-1 flex flex-col items-center justify-center gap-4 py-10 px-8 min-h-[140px] rounded-3xl border-2 bg-zinc-900 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-500 text-zinc-300 text-2xl font-bold transition-all transform active:scale-95 disabled:opacity-50"
+            className="flex-1 flex flex-col items-center justify-center space-y-4 py-10 px-8 min-h-[140px] rounded-3xl border-2 bg-zinc-900 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-500 text-zinc-300 text-2xl font-bold transition-all transform active:scale-95 disabled:opacity-50"
           >
             <span className="text-5xl">❌</span>
             NÃO
@@ -750,7 +751,7 @@ function escapeHtml(str: string): string {
           <button
             disabled={isProcessing}
             onClick={() => handleAulaColetiva(true)}
-            className="flex-1 flex flex-col items-center justify-center gap-4 py-10 px-8 min-h-[140px] rounded-3xl border-2 bg-purple-500/20 border-purple-500/50 hover:bg-purple-500/30 text-purple-300 text-2xl font-bold transition-all transform active:scale-95 disabled:opacity-50"
+            className="flex-1 flex flex-col items-center justify-center space-y-4 py-10 px-8 min-h-[140px] rounded-3xl border-2 bg-purple-500/20 border-purple-500/50 hover:bg-purple-500/30 text-purple-300 text-2xl font-bold transition-all transform active:scale-95 disabled:opacity-50"
           >
             <span className="text-5xl">✅</span>
             SIM
@@ -775,7 +776,7 @@ function escapeHtml(str: string): string {
         <h1 className="text-3xl md:text-5xl font-bold mb-3 text-center tracking-tight">Qual aula coletiva você fez?</h1>
         <p className="text-zinc-400 text-lg md:text-xl mb-8 text-center">Selecione o professor e a aula</p>
 
-        <div className="flex overflow-x-auto snap-x gap-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
+        <div className="flex overflow-x-auto snap-x space-x-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
           {coletivaProfessors.map((staff) => (
             <button
               key={staff.id}
@@ -820,7 +821,7 @@ function escapeHtml(str: string): string {
     return (
       <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
-        <div className="flex items-center gap-2 mb-3 text-center">
+        <div className="flex items-center space-x-2 mb-3 text-center">
           <Music className="w-7 h-7 text-purple-400 flex-shrink-0" />
           <h1 className="text-2xl md:text-4xl font-bold text-center tracking-tight">
             Como foi a aula de <span className="text-purple-400">{feedback.aula_coletiva_professor_aula}</span> com {feedback.aula_coletiva_professor_nome}?
@@ -828,7 +829,7 @@ function escapeHtml(str: string): string {
         </div>
         <p className="text-zinc-400 text-xl mb-10 text-center">Escolha uma nota de 1 a 5 estrelas</p>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(168,85,247,0.05)]">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center space-y-8 shadow-[0_0_50px_rgba(168,85,247,0.05)]">
           <RatingGroup
             value={feedback.aula_coletiva_nota}
             onChange={handleRateAulaColetiva}
@@ -855,32 +856,33 @@ function escapeHtml(str: string): string {
       <div className="relative flex flex-col items-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto pt-8">
         <SkyFitLogo />
         <h1 className="text-3xl md:text-5xl font-bold mb-6 md:mb-10 text-center tracking-tight">{title}</h1>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 w-full max-w-5xl mb-8">
+        <div className="flex flex-wrap justify-center w-full max-w-5xl mb-8 mx-auto -mx-2 md:-mx-2.5">
           {options.map((tag) => {
             const isSelected = feedback.tags.includes(tag);
             return (
-              <button
-                key={tag}
-                onClick={() => handleTagClick(tag)}
-                className={`py-7 px-4 min-h-[90px] rounded-2xl text-xl font-semibold transition-all transform active:scale-95 border-2 ${
-                  isSelected
-                    ? "bg-zinc-100 text-zinc-900 border-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
-                    : "bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-500"
-                }`}
-              >
-                {tag === "Limpeza" ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Sparkles className={`w-6 h-6 ${isSelected ? "text-teal-600" : "text-teal-400"}`} />
-                    {tag}
-                  </span>
-                ) : (
-                  tag
-                )}
-              </button>
+              <div key={tag} className="w-1/2 md:w-1/4 p-2 md:p-2.5 flex">
+                <button
+                  onClick={() => handleTagClick(tag)}
+                  className={`w-full flex-1 flex flex-col items-center justify-center py-7 px-4 min-h-[90px] rounded-2xl text-xl font-semibold break-words whitespace-normal text-center border-2 ${
+                    isSelected
+                      ? "bg-zinc-100 text-zinc-900 border-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                      : "bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-500"
+                  }`}
+                >
+                  {tag === "Limpeza" ? (
+                    <span className="flex items-center justify-center space-x-2 relative z-10">
+                      <Sparkles className={`flex-shrink-0 w-6 h-6 ${isSelected ? "text-teal-600" : "text-teal-400"}`} />
+                      <span>{tag}</span>
+                    </span>
+                  ) : (
+                    <span className="relative z-10">{tag}</span>
+                  )}
+                </button>
+              </div>
             );
           })}
         </div>
-        <div className="flex gap-4">
+        <div className="flex space-x-4">
           <button
             onClick={() => setStep(feedback.aula_coletiva_participou ? 4 : 2)}
             className="px-10 py-6 min-h-[60px] rounded-full text-xl font-bold bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-all text-zinc-400"
@@ -890,9 +892,9 @@ function escapeHtml(str: string): string {
           <button
             onClick={nextFromTags}
             disabled={isProcessing}
-            className={`px-16 py-6 min-h-[60px] rounded-full text-2xl font-bold transition-all transform active:scale-95 disabled:opacity-50 ${
+            className={`px-16 py-6 min-h-[60px] rounded-full text-2xl font-bold disabled:opacity-50 ${
               feedback.tags.length > 0
-                ? "bg-emerald-500 hover:bg-emerald-600 text-white animate-pulse shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+                ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_30px_rgba(16,185,129,0.4)]"
                 : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
             }`}
           >
@@ -912,7 +914,7 @@ function escapeHtml(str: string): string {
         <h1 className="text-3xl md:text-5xl font-bold mb-3 text-center tracking-tight">Quem te atendeu hoje na recepção?</h1>
         <p className="text-zinc-400 text-xl mb-8">Toque para avaliar o atendimento</p>
 
-        <div className="flex overflow-x-auto snap-x gap-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
+        <div className="flex overflow-x-auto snap-x space-x-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
           {receptionists.map((staff) => (
             <button
               key={staff.id}
@@ -927,8 +929,8 @@ function escapeHtml(str: string): string {
                   <User className="w-16 h-16 text-zinc-500" />
                 </div>
               )}
-              <h2 className="text-2xl font-bold">{staff.nome}</h2>
-              <p className="text-emerald-500 text-lg font-medium">Recepção</p>
+              <h2 className="text-2xl font-bold pointer-events-none">{staff.nome}</h2>
+              <p className="text-emerald-500 text-lg font-medium pointer-events-none">Recepção</p>
             </button>
           ))}
 
@@ -953,7 +955,7 @@ function escapeHtml(str: string): string {
           </button>
         </div>
 
-        <div className="flex flex-col items-center gap-4 mt-6">
+        <div className="flex flex-col items-center space-y-4 mt-6">
           <button
             onClick={() => handleSelectRecepcionista("Nenhum", "Nenhum")}
             className="text-zinc-600 hover:text-zinc-400 text-base underline underline-offset-4 transition-colors"
@@ -988,7 +990,7 @@ function escapeHtml(str: string): string {
         <h1 className="text-2xl md:text-5xl font-bold mb-3 text-center tracking-tight">Avalie o atendimento de {feedback.recepcionista_nome}:</h1>
         <p className="text-zinc-400 text-xl mb-10">Escolha uma nota de 1 a 5 estrelas</p>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(234,88,12,0.05)]">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center space-y-8 shadow-[0_0_50px_rgba(234,88,12,0.05)]">
           <RatingGroup value={feedback.recepcionista_nota} onChange={handleRateRecepcionista} />
         </div>
 
@@ -1011,7 +1013,7 @@ function escapeHtml(str: string): string {
         <h1 className="text-3xl md:text-5xl font-bold mb-3 text-center tracking-tight">Quem te atendeu na musculação?</h1>
         <p className="text-zinc-400 text-xl mb-8">Professor / Instrutor em sala</p>
 
-        <div className="flex overflow-x-auto snap-x gap-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
+        <div className="flex overflow-x-auto snap-x space-x-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
           {professors.map((staff) => (
             <button
               key={staff.id}
@@ -1026,8 +1028,8 @@ function escapeHtml(str: string): string {
                   <User className="w-16 h-16 text-zinc-500" />
                 </div>
               )}
-              <h2 className="text-2xl font-bold">{staff.nome}</h2>
-              <p className="text-orange-500 text-lg font-medium">{staff.cargo || "Professor"}</p>
+              <h2 className="text-2xl font-bold pointer-events-none">{staff.nome}</h2>
+              <p className="text-orange-500 text-lg font-medium pointer-events-none">{staff.cargo || "Professor"}</p>
             </button>
           ))}
 
@@ -1072,7 +1074,7 @@ function escapeHtml(str: string): string {
         <h1 className="text-2xl md:text-5xl font-bold mb-3 text-center tracking-tight">Avalie o atendimento do professor {feedback.professor_nome}:</h1>
         <p className="text-zinc-400 text-xl mb-10">Escolha uma nota de 1 a 5 estrelas</p>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(234,88,12,0.05)]">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center space-y-8 shadow-[0_0_50px_rgba(234,88,12,0.05)]">
           <RatingGroup value={feedback.professor_nota} onChange={handleRateProfessor} />
         </div>
 
@@ -1128,7 +1130,7 @@ function escapeHtml(str: string): string {
     return (
       <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
-        <div className="flex items-center justify-center gap-3 mb-2">
+        <div className="flex items-center justify-center space-x-3 mb-2">
           <Sparkles className="w-8 h-8 text-teal-400" />
           <h1 className="text-3xl md:text-5xl font-bold text-center tracking-tight">
             Quem cuidou da limpeza hoje?
@@ -1138,7 +1140,7 @@ function escapeHtml(str: string): string {
           Selecione o colaborador da equipe de limpeza
         </p>
 
-        <div className="flex overflow-x-auto snap-x gap-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
+        <div className="flex overflow-x-auto snap-x space-x-6 w-full max-w-5xl pb-6 px-4 custom-scrollbar">
           {cleaningStaff.map((staff) => (
             <button
               key={staff.id}
@@ -1157,8 +1159,8 @@ function escapeHtml(str: string): string {
                   <Sparkles className="w-16 h-16 text-teal-400" />
                 </div>
               )}
-              <h2 className="text-2xl font-bold">{staff.nome}</h2>
-              <p className="text-teal-400 text-lg font-medium">{staff.cargo || "Limpeza"}</p>
+              <h2 className="text-2xl font-bold pointer-events-none">{staff.nome}</h2>
+              <p className="text-teal-400 text-lg font-medium pointer-events-none">{staff.cargo || "Limpeza"}</p>
             </button>
           ))}
 
@@ -1183,7 +1185,7 @@ function escapeHtml(str: string): string {
           </button>
         </div>
 
-        <div className="flex flex-col items-center gap-4 mt-6">
+        <div className="flex flex-col items-center space-y-4 mt-6">
           <button
             onClick={() => handleSelectLimpeza("Nenhum", "Nenhum")}
             className="text-zinc-500 hover:text-zinc-300 text-base underline underline-offset-4 transition-colors"
@@ -1207,7 +1209,7 @@ function escapeHtml(str: string): string {
     return (
       <div className="relative flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-6 md:p-8 overflow-y-auto">
         <SkyFitLogo />
-        <div className="flex items-center gap-2 mb-3 text-center">
+        <div className="flex items-center space-x-2 mb-3 text-center">
           <Sparkles className="w-7 h-7 text-teal-400 flex-shrink-0" />
           <h1 className="text-2xl md:text-5xl font-bold mb-3 text-center tracking-tight">
             Avalie o trabalho de {feedback.limpeza_nome}:
@@ -1215,7 +1217,7 @@ function escapeHtml(str: string): string {
         </div>
         <p className="text-zinc-400 text-xl mb-10">Escolha uma nota de 1 a 5 estrelas</p>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(20,184,166,0.08)]">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 flex flex-col items-center space-y-8 shadow-[0_0_50px_rgba(20,184,166,0.08)]">
           <RatingGroup
             value={feedback.limpeza_nota}
             onChange={handleRateLimpeza}
@@ -1253,7 +1255,7 @@ function StepSuggestions({ onSubmit, isProcessing, onBack }: { onSubmit: (s: str
       <div className="w-full max-w-3xl space-y-8 pb-10">
         <h1 className="text-3xl md:text-5xl font-bold text-center tracking-tight">Falta muito pouco!</h1>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col gap-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col space-y-4">
           <label htmlFor="sugestao" className="text-2xl font-semibold text-center text-orange-400">
             Deixe sua sugestão para que possamos melhorar
           </label>
@@ -1270,7 +1272,7 @@ function StepSuggestions({ onSubmit, isProcessing, onBack }: { onSubmit: (s: str
           />
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col gap-4 text-center">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col space-y-4 text-center">
           <label htmlFor="contato" className="text-xl text-zinc-300">
             Quer que a diretoria fale com você? Deixe seu Celular ou WhatsApp (Opcional)
           </label>
@@ -1292,7 +1294,7 @@ function StepSuggestions({ onSubmit, isProcessing, onBack }: { onSubmit: (s: str
           </p>
         </div>
 
-        <div className="flex gap-4 mt-8">
+        <div className="flex space-x-4 mt-8">
           <button
             onClick={onBack}
             className="px-10 py-6 min-h-[60px] rounded-full text-xl font-bold bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-all text-zinc-400 w-1/3"
@@ -1320,7 +1322,7 @@ function RatingGroup({ value, onChange, color = "text-orange-500", glowColor = "
   glowColor?: string
 }) {
   return (
-    <div className="flex gap-4">
+    <div className="flex space-x-4">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
@@ -1342,7 +1344,7 @@ export default function Home() {
     <Suspense
       fallback={
         <div className="h-screen bg-zinc-950 flex justify-center items-center text-white">
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center space-y-3">
             <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
             <p className="text-zinc-500 text-sm">Iniciando pesquisa SkyFit...</p>
           </div>
@@ -1353,3 +1355,5 @@ export default function Home() {
     </Suspense>
   );
 }
+
+
