@@ -2,11 +2,10 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { db, storage, auth } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Users, Upload, Trash2, ArrowLeft, User } from "lucide-react";
+import { Users, Trash2, ArrowLeft, User, Link } from "lucide-react";
 
 function EquipeDashboardInner() {
   const router = useRouter();
@@ -15,8 +14,9 @@ function EquipeDashboardInner() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [nome, setNome] = useState("");
   const [cargo, setCargo] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [setor, setSetor] = useState("recepcao");
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -47,31 +47,25 @@ function EquipeDashboardInner() {
     e.preventDefault();
     if (!nome.trim() || !cargo.trim()) return;
 
-    setIsUploading(true);
+    setIsSaving(true);
     try {
-      let imageUrl = "";
-      if (imageFile) {
-        // Upload image to Firebase Storage
-        const fileRef = ref(storage, `equipe/${Date.now()}_${imageFile.name}`);
-        const uploadResult = await uploadBytes(fileRef, imageFile);
-        imageUrl = await getDownloadURL(uploadResult.ref);
-      }
-
       await addDoc(collection(db, "colaboradores"), {
         nome,
         cargo,
-        image: imageUrl,
+        image: imageUrl.trim(),
+        setor,
       });
 
       // Clear form
       setNome("");
       setCargo("");
-      setImageFile(null);
+      setImageUrl("");
+      setSetor("recepcao");
     } catch (err) {
       console.error("Erro ao adicionar colaborador", err);
-      alert("Erro ao adicionar colaborador. Verifique seu console (e se as Storage Rules estão corretas).");
+      alert("Erro ao adicionar colaborador. Verifique seu console.");
     } finally {
-      setIsUploading(false);
+      setIsSaving(false);
     }
   };
 
@@ -127,24 +121,34 @@ function EquipeDashboardInner() {
               />
             </div>
             <div>
-              <label className="block text-zinc-400 mb-2">Foto (Opcional)</label>
-              <label className="flex items-center justify-center gap-2 w-full bg-zinc-800 border-2 border-dashed border-zinc-700 hover:border-emerald-500 rounded-lg p-6 cursor-pointer transition-colors">
-                <Upload size={24} className="text-zinc-400" />
-                <span className="text-zinc-400">{imageFile ? imageFile.name : "Clique para selecionar"}</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  onChange={e => setImageFile(e.target.files?.[0] || null)}
-                />
-              </label>
+              <label className="block text-zinc-400 mb-2">Setor / Função</label>
+              <select 
+                value={setor} 
+                onChange={e => setSetor(e.target.value)}
+                className="w-full bg-zinc-800 border box-border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500" 
+                required
+              >
+                <option value="recepcao">Recepção</option>
+                <option value="musculacao">Sala de Musculação (Professor)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-zinc-400 mb-2">URL da Foto (Opcional)</label>
+              <input 
+                type="url" 
+                value={imageUrl} 
+                onChange={e => setImageUrl(e.target.value)}
+                className="w-full bg-zinc-800 border box-border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500 text-sm" 
+                placeholder="Ex: https://link-da-imagem.com/foto.jpg" 
+              />
+              <p className="text-xs text-zinc-500 mt-1">Cole o link de uma imagem pública ou deixe em branco para usar o ícone padrão.</p>
             </div>
             <button 
               type="submit" 
-              disabled={isUploading}
+              disabled={isSaving}
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50"
             >
-              {isUploading ? "Salvando..." : "Adicionar na Tela"}
+              {isSaving ? "Salvando..." : "Adicionar na Tela"}
             </button>
           </form>
         </div>
@@ -170,7 +174,16 @@ function EquipeDashboardInner() {
                 </div>
                 <div className="flex-1 px-4">
                   <p className="font-bold text-lg">{member.nome}</p>
-                  <p className="text-sm text-zinc-400">{member.cargo}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm text-zinc-400">{member.cargo}</p>
+                    <span className={`text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full ${
+                      member.setor === 'recepcao' 
+                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
+                        : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                    }`}>
+                      {member.setor === 'recepcao' ? 'Recepção' : 'Musculação'}
+                    </span>
+                  </div>
                 </div>
                 <button 
                   onClick={() => handleRemove(member.id)}
